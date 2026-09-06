@@ -1,0 +1,163 @@
+<main class="landing-page">
+  <header class="landing-header">
+    <a class="brand" href="#inicio" aria-label="Mentaiko inicio" (click)="closeMenu()">
+      <img class="brand-logo" src="/branding/mentaiko-logo.svg" alt="Mentaiko">
+    </a>
+
+    <button class="landing-menu-button" type="button" [attr.aria-expanded]="menuOpen()" aria-controls="landing-nav" (click)="menuOpen.set(!menuOpen())">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav id="landing-nav" class="landing-nav" [class.open]="menuOpen()">
+      <a href="#como-funciona" (click)="closeMenu()">Como funciona</a>
+      <a href="#beneficios" (click)="closeMenu()">Beneficios</a>
+      <a href="#funcionalidades" (click)="closeMenu()">Funcionalidades</a>
+      <a class="btn secondary" routerLink="/login" (click)="closeMenu()">Iniciar sesion</a>
+      <a class="btn primary" routerLink="/registro" (click)="closeMenu()">Comenzar ahora</a>
+    </nav>
+  </header>
+
+  <section id="inicio" class="hero-section">
+    <div class="hero-copy">
+      <span class="landing-eyebrow">Bienestar universitario no clinico</span>
+      <h1>Pausas inteligentes para reconectar contigo</h1>
+      <p>Reconoce como te sientes, realiza pequenas pausas y encuentra una manera mas equilibrada de continuar con tu dia universitario.</p>
+      <div class="hero-actions">
+        <a class="btn primary" routerLink="/registro">Comenzar ahora</a>
+        <a class="btn secondary" routerLink="/login">Ya tengo una cuenta</a>
+      </div>
+    </div>
+
+    <div class="product-visual" aria-label="Vista conceptual de Mentaiko">
+      <div class="panel visual-card mood-card">
+        <div class="visual-card-head">
+          <span>Check-in de hoy</span>
+          <strong>4 min</strong>
+        </div>
+        <div class="mood-scale">
+          <span></span>
+          <span></span>
+          <span class="active"></span>
+          <span></span>
+          <span></span>
+        </div>
+        <p>Reconoce tu emocion y el contexto antes de seguir.</p>
+      </div>
+      <div class="panel visual-card pause-card">
+        <svg viewBox="0 0 32 32" aria-hidden="true">
+          <path d="M16 4a12 12 0 1 0 12 12" />
+          <path d="M16 4v12l8 4" />
+        </svg>
+        <div>
+          <span>Pausa sugerida</span>
+          <strong>Respirar y ordenar prioridades</strong>
+        </div>
+      </div>
+      <div class="panel visual-card progress-card">
+        <span>Progreso semanal</span>
+        <div class="mini-bars">
+          <i style="height: 42%"></i>
+          <i style="height: 58%"></i>
+          <i style="height: 34%"></i>
+          <i style="height: 66%"></i>
+          <i style="height: 50%"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="value-section">
+    <div>
+      <span class="landing-eyebrow">Una pausa antes de avanzar</span>
+      <h2>La carga academica puede hacer que ignores como te sientes.</h2>
+    </div>
+    <p>Mentaiko propone un espacio sencillo para detenerte un momento, reconocer tu estado emocional, recibir una actividad breve y continuar con mayor equilibrio, sin promesas medicas ni juicios sobre tu proceso.</p>
+  </section>
+
+  <section id="como-funciona" class="landing-section">
+    <div class="section-heading">
+      <span class="landing-eyebrow">Como funciona</span>
+      <h2>Tres pasos simples para volver a ti</h2>
+    </div>
+    <div class="steps-grid">
+      <article class="panel step-card">
+        <span class="icon-shell">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z" /></svg>
+        </span>
+        <h3>Cuentanos como te sientes</h3>
+        <p>Registra emocion, intensidad y contexto en pocos pasos.</p>
+      </article>
+      <article class="panel step-card">
+        <span class="icon-shell">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /><path d="M12 5v14" /><path d="M7 7l10 10" /><path d="M17 7 7 17" /></svg>
+        </span>
+        <h3>Recibe una pausa para ti</h3>
+        <p>Encuentra microactividades breves relacionadas con tu momento.</p>
+      </article>
+      <article class="panel step-card">
+        <span class="icon-shell">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 15v-4" /><path d="M12 15V8" /><path d="M16 15v-6" /></svg>
+        </span>
+        <h3>Observa tu progreso</h3>
+        <p>Revisa patrones personales e indicadores semanales con calma.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="funcionalidades" class="landing-section feature-band">
+    <div class="section-heading">
+      <span class="landing-eyebrow">Funcionalidades</span>
+      <h2>Herramientas concretas para tu dia universitario</h2>
+    </div>
+    <div class="features-grid">
+      <article class="panel"><h3>Check-in emocional</h3><p>Registra como estas, con intensidad y contexto.</p></article>
+      <article class="panel"><h3>Microactividades</h3><p>Acciones breves para acompanar el momento.</p></article>
+      <article class="panel"><h3>Historial personal</h3><p>Consulta tus registros y reconoce cambios en el tiempo.</p></article>
+      <article class="panel"><h3>Indicadores semanales</h3><p>Observa tendencias personales sin sobrecarga visual.</p></article>
+      <article class="panel"><h3>Recomendaciones</h3><p>Recibe pausas segun el estado emocional registrado.</p></article>
+      <article class="panel"><h3>Privacidad</h3><p>Tu informacion emocional se presenta como un espacio personal.</p></article>
+    </div>
+  </section>
+
+  <section id="beneficios" class="landing-section benefits-section">
+    <div class="section-heading">
+      <span class="landing-eyebrow">Beneficios</span>
+      <h2>Un acompanamiento ligero, claro y realista</h2>
+    </div>
+    <div class="benefits-list">
+      <div><strong>Mayor conciencia emocional</strong><span>Nombrar lo que sientes puede ayudarte a pausar con mas claridad.</span></div>
+      <div><strong>Pausas breves</strong><span>Actividades pensadas para encajar en la jornada academica.</span></div>
+      <div><strong>Seguimiento personal</strong><span>Historial e indicadores para observar tu propio proceso.</span></div>
+      <div><strong>Experiencia sencilla</strong><span>Interfaz calmada, directa y sin sobrecarga visual.</span></div>
+    </div>
+  </section>
+
+  <section class="privacy-section">
+    <div>
+      <span class="landing-eyebrow">Tu bienestar es personal</span>
+      <h2>Privacidad y alcance claro desde el inicio</h2>
+    </div>
+    <p>La informacion emocional se trata como un dato sensible de tu experiencia personal. Mentaiko es una herramienta de acompanamiento y autocuidado; no sustituye terapia, diagnostico ni atencion profesional. Ante una emergencia, busca ayuda profesional o comunicate con los servicios de emergencia de tu localidad.</p>
+  </section>
+
+  <section class="final-cta">
+    <h2>Regalate una pausa para volver a ti</h2>
+    <a class="btn primary" routerLink="/registro">Comenzar ahora</a>
+  </section>
+
+  <footer class="landing-footer">
+    <div>
+      <strong>Mentaiko</strong>
+      <span>Pausas inteligentes para reconectar contigo.</span>
+    </div>
+    <nav>
+      <a routerLink="/login">Login</a>
+      <a routerLink="/registro">Registro</a>
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#beneficios">Beneficios</a>
+    </nav>
+    <small>Proyecto academico Mentaiko. Todos los derechos reservados.</small>
+  </footer>
+</main>

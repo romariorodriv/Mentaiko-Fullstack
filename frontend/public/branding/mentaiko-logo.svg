@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="196" height="48" viewBox="0 0 196 48" role="img" aria-labelledby="title desc">
+  <title id="title">Mentaiko</title>
+  <desc id="desc">Logo oficial de Mentaiko</desc>
+  <rect width="40" height="40" x="4" y="4" rx="13" fill="#174f4a"/>
+  <text x="24" y="30" text-anchor="middle" font-family="Manrope, DM Sans, Arial, sans-serif" font-size="20" font-weight="800" fill="#ffffff">M</text>
+  <text x="56" y="23" font-family="Manrope, DM Sans, Arial, sans-serif" font-size="19" font-weight="800" fill="#183b39">Mentaiko</text>
+  <text x="56" y="36" font-family="DM Sans, Arial, sans-serif" font-size="10" font-weight="500" fill="#677c79">Tu espacio de bienestar</text>
+</svg>

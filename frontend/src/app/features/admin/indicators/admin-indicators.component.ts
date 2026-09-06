@@ -1,0 +1,9 @@
+import { Component, OnInit, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
+import { ApiService } from '../../../core/services/api.service';
+import { AdminIndicators } from '../../../shared/models/models';
+
+@Component({selector:'app-admin-indicators',standalone:true,imports:[DecimalPipe],template:`
+<header class="page-head"><div><span class="eyebrow">ADMINISTRACIÓN · PRIVACIDAD</span><h1>Indicadores generales</h1><p>Tendencias agregadas sin exponer identidades ni notas privadas.</p></div></header>@if(error()){<div class="alert error">{{error()}}</div>}@if(data();as d){<section class="metric-grid"><article class="metric"><span>Usuarios activos</span><strong>{{d.activeUsers}}</strong><small>Sin información identificable</small></article><article class="metric"><span>Check-ins totales</span><strong>{{d.totalCheckins}}</strong><small>Solo conteo agregado</small></article><article class="metric"><span>Finalización de actividades</span><strong>{{d.completionRate|number:'1.0-0'}}<i>%</i></strong><small>Proporción general</small></article></section><section class="panel indicator-feature"><div><span class="eyebrow">TENDENCIA GENERAL</span><h2>Emoción más frecuente</h2><strong>{{d.mostFrequentEmotion}}</strong></div><div class="privacy-shield">◈<p>Los grupos pequeños se ocultan para evitar la reidentificación de estudiantes.</p></div></section>}@else{<div class="loading-panel">Cargando indicadores anonimizados...</div>}
+`})
+export class AdminIndicatorsComponent implements OnInit{readonly data=signal<AdminIndicators|null>(null);readonly error=signal('');constructor(private readonly api:ApiService){}ngOnInit():void{this.api.indicators().subscribe({next:x=>this.data.set(x),error:e=>this.error.set(e.status===403?'No tienes permisos para consultar estos indicadores.':'No se pudo conectar con la API.')});}}

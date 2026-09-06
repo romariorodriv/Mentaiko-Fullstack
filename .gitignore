@@ -1,0 +1,25 @@
+# Angular
+**/node_modules/
+**/dist/
+**/.angular/
+**/coverage/
+
+# Spring Boot
+**/target/
+
+# Secretos
+**/.env
+**/.env.*
+!**/.env.example
+
+# IDE
+**/.idea/
+**/.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Archivos temporales
+*.log
+*.zip
