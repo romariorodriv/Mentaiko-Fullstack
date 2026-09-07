@@ -1,0 +1,248 @@
+package com.mentaiko.backend.controller;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsInRelativeOrder;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.time.LocalDate;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.web.servlet.MockMvc;
+
+import com.mentaiko.backend.config.EmotionCatalogInitializer;
+import com.mentaiko.backend.entity.Emotion;
+import com.mentaiko.backend.entity.User;
+import com.mentaiko.backend.enums.Role;
+import com.mentaiko.backend.repository.EmotionRepository;
+import com.mentaiko.backend.repository.UserRepository;
+import com.mentaiko.backend.security.JwtService;
+import com.mentaiko.backend.service.EmotionService;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+class EmotionIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private EmotionRepository emotionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private EmotionService emotionService;
+
+    @Autowired
+    private EmotionCatalogInitializer initializer;
+
+    @BeforeEach
+    void setUp() {
+        emotionRepository.deleteAll();
+        userRepository.deleteAll();
+    }
+
+    @Test
+    void getEmotionsWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(get("/api/emotions"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void getEmotionsWithUserReturnsActiveOnlyByDefaultWithoutInternalFields() throws Exception {
+        Emotion active = saveEmotion("Calma", true);
+        saveEmotion("Estres", false);
+        String token = tokenFor(Role.USER);
+
+        mockMvc.perform(get("/api/emotions").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(active.getId()))
+                .andExpect(jsonPath("$[0].name").value("Calma"))
+                .andExpect(jsonPath("$[0].active").value(true))
+                .andExpect(jsonPath("$[0].createdAt").exists())
+                .andExpect(jsonPath("$[0].updatedAt").exists())
+                .andExpect(jsonPath("$[0].normalizedName").doesNotExist());
+    }
+
+    @Test
+    void getEmotionsCanReturnOnlyActiveOrAllWithStableOrder() throws Exception {
+        saveEmotion("Tristeza", true);
+        saveEmotion("Ansiedad", false);
+        saveEmotion("Calma", true);
+        String token = tokenFor(Role.USER);
+
+        mockMvc.perform(get("/api/emotions")
+                        .param("activeOnly", "true")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name", containsInRelativeOrder("Calma", "Tristeza")));
+
+        mockMvc.perform(get("/api/emotions")
+                        .param("activeOnly", "false")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].name", containsInRelativeOrder("Ansiedad", "Calma", "Tristeza")));
+    }
+
+    @Test
+    void postEmotionWithoutTokenReturns401AndUserReturns403() throws Exception {
+        String userToken = tokenFor(Role.USER);
+
+        mockMvc.perform(post("/api/admin/emotions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Calma\"}"))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(post("/api/admin/emotions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Calma\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminCanCreateEmotionActiveByDefault() throws Exception {
+        String adminToken = tokenFor(Role.ADMIN);
+
+        mockMvc.perform(post("/api/admin/emotions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"  Calma  profunda \"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.name").value("Calma profunda"))
+                .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.createdAt").exists())
+                .andExpect(jsonPath("$.updatedAt").exists())
+                .andExpect(jsonPath("$.normalizedName").doesNotExist());
+
+        assertThat(emotionRepository.existsByNormalizedName("calma profunda")).isTrue();
+    }
+
+    @Test
+    void createRejectsBlankAndDuplicateNames() throws Exception {
+        String adminToken = tokenFor(Role.ADMIN);
+        saveEmotion("Calma profunda", true);
+
+        mockMvc.perform(post("/api/admin/emotions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.name").exists());
+
+        mockMvc.perform(post("/api/admin/emotions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Calma profunda\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Ya existe una emocion con ese nombre"));
+
+        mockMvc.perform(post("/api/admin/emotions")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"  CALMA   PROFUNDA \"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Ya existe una emocion con ese nombre"));
+    }
+
+    @Test
+    void putMissingEmotionReturns404() throws Exception {
+        String adminToken = tokenFor(Role.ADMIN);
+
+        mockMvc.perform(put("/api/admin/emotions/999")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Calma\"}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Emocion no encontrada"));
+    }
+
+    @Test
+    void adminCanUpdateNameAndState() throws Exception {
+        Emotion emotion = saveEmotion("Calma", true);
+        String adminToken = tokenFor(Role.ADMIN);
+
+        mockMvc.perform(put("/api/admin/emotions/" + emotion.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Calma y tranquilidad\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Calma y tranquilidad"))
+                .andExpect(jsonPath("$.active").value(true));
+
+        mockMvc.perform(put("/api/admin/emotions/" + emotion.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"active\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Calma y tranquilidad"))
+                .andExpect(jsonPath("$.active").value(false));
+    }
+
+    @Test
+    void userCannotUpdateEmotion() throws Exception {
+        Emotion emotion = saveEmotion("Calma", true);
+        String userToken = tokenFor(Role.USER);
+
+        mockMvc.perform(put("/api/admin/emotions/" + emotion.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"active\":false}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void defaultCatalogInitializerIsIdempotent() {
+        initializer.initializeDefaultCatalog();
+        long firstCount = emotionRepository.count();
+
+        initializer.initializeDefaultCatalog();
+        long secondCount = emotionRepository.count();
+
+        assertThat(firstCount).isEqualTo(8);
+        assertThat(secondCount).isEqualTo(8);
+    }
+
+    private Emotion saveEmotion(String name, boolean active) {
+        Emotion emotion = new Emotion();
+        emotion.setName(name);
+        emotion.setNormalizedName(emotionService.normalizeForUniqueness(name));
+        emotion.setActive(active);
+        return emotionRepository.save(emotion);
+    }
+
+    private String tokenFor(Role role) {
+        User user = new User();
+        user.setName("Usuario Test");
+        user.setEmail(role.name().toLowerCase() + "@example.com");
+        user.setPasswordHash(passwordEncoder.encode("Clave123"));
+        user.setBirthDate(LocalDate.of(2000, 5, 20));
+        user.setUniversity("UPC");
+        user.setCareer("Ingenieria de Software");
+        user.setRole(role);
+        user.setActive(true);
+        User saved = userRepository.save(user);
+        return jwtService.generateToken(saved);
+    }
+}

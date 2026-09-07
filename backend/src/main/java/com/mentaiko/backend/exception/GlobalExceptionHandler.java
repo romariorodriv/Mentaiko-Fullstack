@@ -30,6 +30,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiError> handleDuplicateEmail(DuplicateEmailException exception, WebRequest request) {
         return build(HttpStatus.CONFLICT, exception.getMessage(), request, null);
     }
+    
+    @ExceptionHandler(DuplicateEmotionNameException.class)
+    public ResponseEntity<ApiError> handleDuplicateEmotion(DuplicateEmotionNameException exception, WebRequest request) {
+        return build(HttpStatus.CONFLICT, exception.getMessage(), request, null);
+    }
 
     @ExceptionHandler(UserInactiveException.class)
     public ResponseEntity<ApiError> handleInactiveUser(UserInactiveException exception, WebRequest request) {
