@@ -3,7 +3,7 @@ export type Role = 'USER' | 'ADMIN';
 export interface UserProfile { id: number; name: string; email: string; birthDate: string; university: string; career: string; role: Role; active: boolean; createdAt: string; }
 export interface AuthResponse { token: string; user: UserProfile; }
 export interface RegisterRequest { name: string; email: string; password: string; birthDate: string; university: string; career: string; }
-export interface Emotion { id: number; name: string; active: boolean; }
+export interface Emotion { id: number; name: string; active: boolean; createdAt: string; updatedAt: string; }
 export interface Checkin { id: number; emotion: Emotion; intensity: number; context: string; note?: string; createdAt: string; }
 export interface CheckinRequest { emotionId: number; intensity: number; context: string; note?: string; }
 export interface MicroActivity { id: number; title: string; description: string; durationMinutes: number; active: boolean; }
