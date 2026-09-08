@@ -4,7 +4,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ApiError, Emotion } from '../../../shared/models/models';
 
 @Component({
-  selector: 'app-admin-emotions',
+  selector: 'app-admin-activities',
   standalone: true,
   imports: [ReactiveFormsModule],
   template: `
@@ -13,7 +13,7 @@ import { ApiError, Emotion } from '../../../shared/models/models';
 <section class="admin-grid"><form class="panel" [formGroup]="form" (ngSubmit)="create()"><span class="eyebrow">NUEVA EMOCION</span><h2>Agregar al catalogo</h2><label>Nombre<input formControlName="name" placeholder="Ej. Esperanza" maxlength="80"></label>@if(form.controls.name.touched&&form.controls.name.invalid){<div class="field-error">Escribe un nombre de 2 a 80 caracteres.</div>}<button class="btn primary full" [disabled]="form.invalid||saving()">{{saving()?'Guardando...':'Agregar emocion'}}</button></form><article class="panel span-2"><div class="panel-head"><div><span class="eyebrow">CATALOGO COMPLETO</span><h2>{{items().length}} emociones</h2></div><button class="btn secondary" (click)="load()" [disabled]="loading()">Actualizar</button></div>@if(loading()){<div class="loading-panel">Cargando catalogo...</div>} @else {<div class="data-list">@for(e of items();track e.id){<form [formGroup]="editForms[e.id]" (ngSubmit)="save(e)"><span class="status-dot" [class.off]="!e.active"></span><input formControlName="name" [attr.aria-label]="'Nombre de '+e.name" maxlength="80"><span>{{e.active?'Activa':'Inactiva'}}</span><button type="button" class="switch" [class.on]="e.active" (click)="toggle(e)" [disabled]="busyId()===e.id" [attr.aria-label]="'Cambiar estado de '+e.name"><i></i></button><button class="btn secondary" [disabled]="editForms[e.id].invalid||busyId()===e.id||!hasNameChanged(e)">Guardar</button></form>} @empty {<div class="empty"><b>No hay emociones registradas</b><p>Agrega la primera opcion del catalogo.</p></div>}</div>}</article></section>
 `
 })
-export class AdminEmotionsComponent implements OnInit {
+export class AdminActivitiesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   readonly items = signal<Emotion[]>([]);
   readonly loading = signal(true);

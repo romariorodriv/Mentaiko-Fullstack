@@ -1,15 +1,16 @@
+import { DatePipe } from '@angular/common';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { Emotion } from '../../shared/models/models';
+import { ApiError, Checkin, Emotion } from '../../shared/models/models';
 
 @Component({
   selector: 'app-checkins',
   standalone: true,
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, DatePipe],
   template: `
-<header class="page-head"><div><span class="eyebrow">REGISTRO EMOCIONAL</span><h1>Mis check-ins</h1><p>Selecciona como te sientes para preparar tu proximo registro.</p></div><button class="btn primary" (click)="openForm()" [disabled]="loading()">+ Nuevo check-in</button></header>
-@if(error()){<div class="alert error">{{error()}}</div>}
+<header class="page-head"><div><span class="eyebrow">REGISTRO EMOCIONAL</span><h1>Mis check-ins</h1><p>Registra como te sientes en este momento.</p></div><button class="btn primary" (click)="openForm()" [disabled]="loading()||!emotions().length">+ Nuevo check-in</button></header>
+@if(error()){<div class="alert error">{{error()}}</div>} @if(success()){<div class="alert success">{{success()}}</div>}
 @if(loading()){<div class="loading-panel">Cargando catalogo de emociones...</div>} @else {
   <section class="panel">
     <div class="panel-head"><div><span class="eyebrow">EMOCIONES ACTIVAS</span><h2>{{emotions().length}} disponibles</h2></div></div>
@@ -22,21 +23,25 @@ import { Emotion } from '../../shared/models/models';
     }
   </section>
 }
-@if(showForm()){<div class="modal-layer"><button class="modal-backdrop" (click)="closeForm()"></button><form class="modal" [formGroup]="form" (ngSubmit)="previewPending()"><div class="modal-head"><div><span class="eyebrow">NUEVO CHECK-IN</span><h2>Como te sientes?</h2></div><button type="button" (click)="closeForm()">x</button></div><label>Emocion<select formControlName="emotionId"><option [ngValue]="0">Selecciona una emocion</option>@for(e of emotions();track e.id){<option [ngValue]="e.id">{{e.name}}</option>}</select></label><label>Intensidad <b>{{form.controls.intensity.value}}/10</b><input type="range" min="1" max="10" formControlName="intensity"></label><label>Contexto<input formControlName="context" placeholder="Estudios, trabajo, familia..."></label><label>Nota opcional<textarea formControlName="note" rows="4" placeholder="Que paso? Escribe solo lo que quieras recordar."></textarea></label><div class="alert">Guardar check-ins pertenece a HU05 y todavia esta pendiente. En HU04 solo se consulta el catalogo de emociones.</div>@if(formError()){<div class="alert error">{{formError()}}</div>}<div class="modal-actions"><button type="button" class="btn secondary" (click)="closeForm()">Cancelar</button><button class="btn primary" [disabled]="form.invalid">Validar seleccion</button></div></form></div>}
+@if(created()){<section class="timeline recent-checkin"><article class="checkin-card"><div class="emotion-dot" [style.--intensity]="created()!.intensity"></div><div class="checkin-main"><div><span class="emotion-name">{{created()!.emotion.name}}</span><span class="context-tag">{{created()!.context}}</span></div><p>{{created()!.note||'Sin nota personal'}}</p><small>{{created()!.createdAt|date:'d MMM y, h:mm a'}}</small></div><div class="intensity"><strong>{{created()!.intensity}}</strong><small>de 5</small></div></article></section>}
+@if(showForm()){<div class="modal-layer"><button class="modal-backdrop" type="button" (click)="closeForm()" aria-label="Cerrar formulario"></button><form class="modal" [formGroup]="form" (ngSubmit)="save()"><div class="modal-head"><div><span class="eyebrow">NUEVO CHECK-IN</span><h2>Como te sientes?</h2></div><button type="button" (click)="closeForm()" aria-label="Cerrar">x</button></div><label>Emocion<select formControlName="emotionId"><option [ngValue]="0">Selecciona una emocion</option>@for(e of emotions();track e.id){<option [ngValue]="e.id">{{e.name}}</option>}</select></label>@if(form.controls.emotionId.touched&&form.controls.emotionId.invalid){<div class="field-error">Selecciona una emocion activa.</div>}<label>Intensidad <b>{{form.controls.intensity.value}}/5</b><input type="range" min="1" max="5" formControlName="intensity"></label><label>Contexto<input formControlName="context" placeholder="Estudios, trabajo, familia..." maxlength="100"></label>@if(form.controls.context.touched&&form.controls.context.invalid){<div class="field-error">El contexto es obligatorio y debe tener maximo 100 caracteres.</div>}<label>Nota opcional<textarea formControlName="note" rows="4" maxlength="500" placeholder="Que paso? Escribe solo lo que quieras recordar."></textarea><small>Maximo 500 caracteres.</small></label>@if(formError()){<div class="alert error">{{formError()}}</div>}<div class="modal-actions"><button type="button" class="btn secondary" (click)="closeForm()" [disabled]="saving()">Cancelar</button><button class="btn primary" [disabled]="form.invalid||saving()">{{saving()?'Guardando...':'Guardar check-in'}}</button></div></form></div>}
 `
 })
 export class CheckinsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   readonly emotions = signal<Emotion[]>([]);
+  readonly created = signal<Checkin | null>(null);
   readonly loading = signal(true);
+  readonly saving = signal(false);
   readonly error = signal('');
+  readonly success = signal('');
   readonly showForm = signal(false);
   readonly formError = signal('');
   readonly form = this.fb.nonNullable.group({
     emotionId: [0, [Validators.required, Validators.min(1)]],
-    intensity: [5, [Validators.required, Validators.min(1), Validators.max(10)]],
+    intensity: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
     context: ['', [Validators.required, Validators.maxLength(100)]],
-    note: ['']
+    note: ['', [Validators.maxLength(500)]]
   });
 
   constructor(private readonly api: ApiService) {}
@@ -53,16 +58,16 @@ export class CheckinsComponent implements OnInit {
         this.emotions.set(emotions);
         this.loading.set(false);
       },
-      error: () => {
+      error: error => {
         this.loading.set(false);
-        this.error.set('No se pudo cargar el catalogo de emociones.');
+        this.error.set(this.errorMessage(error, 'No se pudo cargar el catalogo de emociones.'));
       }
     });
   }
 
   openForm(): void {
-    this.form.reset({emotionId: this.emotions()[0]?.id ?? 0, intensity: 5, context: '', note: ''});
-    this.formError.set('');
+    this.form.reset({emotionId: this.emotions()[0]?.id ?? 0, intensity: 3, context: '', note: ''});
+    this.clearMessages();
     this.showForm.set(true);
   }
 
@@ -76,11 +81,35 @@ export class CheckinsComponent implements OnInit {
     this.form.patchValue({emotionId: emotion.id});
   }
 
-  previewPending(): void {
-    if (this.form.invalid) {
-      this.formError.set('Selecciona una emocion e indica el contexto.');
+  save(): void {
+    if (this.form.invalid || this.saving()) {
+      this.form.markAllAsTouched();
       return;
     }
-    this.formError.set('La seleccion es valida, pero guardar el check-in se implementara en HU05.');
+
+    this.saving.set(true);
+    this.clearMessages();
+    this.api.createCheckin(this.form.getRawValue()).subscribe({
+      next: checkin => {
+        this.created.set(checkin);
+        this.saving.set(false);
+        this.success.set('Check-in emocional creado correctamente.');
+        this.closeForm();
+      },
+      error: error => {
+        this.saving.set(false);
+        this.formError.set(this.errorMessage(error, 'No se pudo crear el check-in. Revisa los datos e intenta nuevamente.'));
+      }
+    });
+  }
+
+  private clearMessages(): void {
+    this.error.set('');
+    this.success.set('');
+    this.formError.set('');
+  }
+
+  private errorMessage(error: ApiError, fallback: string): string {
+    return error?.message ?? fallback;
   }
 }

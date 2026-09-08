@@ -2,7 +2,7 @@
 
 Base local: `http://localhost:8080/api`
 
-| HU | Método | Endpoint | Uso |
+| HU | Metodo | Endpoint | Uso |
 |---|---|---|---|
 | 01 | POST | `/auth/register` | Crear usuario |
 | 02 | POST | `/auth/login` | Obtener JWT |
@@ -15,11 +15,11 @@ Base local: `http://localhost:8080/api`
 | 08 | DELETE | `/checkins/{id}` | Eliminar check-in propio |
 | 09 | GET | `/micro-activities?activeOnly=true` | Consultar actividades |
 | 09 | POST, PUT | `/admin/micro-activities`, `/admin/micro-activities/{id}` | Administrar actividades |
-| 10 | POST | `/recommendations` | Generar recomendación |
+| 10 | POST | `/recommendations` | Generar recomendacion |
 | 10 | GET | `/recommendations/me` | Consultar recomendaciones propias |
 | 11 | POST | `/recommendations/{id}/complete` | Completar actividad |
 | 12 | GET | `/reports/weekly?week=YYYY-Www` | Resumen semanal |
-| 13 | GET | `/reports/distribution?from=&to=` | Distribución personal |
+| 13 | GET | `/reports/distribution?from=&to=` | Distribucion personal |
 | 14 | GET | `/admin/indicators` | Indicadores anonimizados |
 
 ## Respuestas importantes
@@ -27,4 +27,80 @@ Base local: `http://localhost:8080/api`
 - Login: `{ "token": "...", "user": { ... } }`
 - Listado de check-ins: formato paginado `{ content, totalElements, totalPages, number, size }`
 - Roles JWT: el frontend reconoce `role`, `roles[0]` o `authorities[0]`, con o sin prefijo `ROLE_`.
-- Los errores deberían devolver `{ status, message, errors? }`.
+- Los errores deberian devolver `{ status, message, errors? }`.
+
+## HU05 - Crear check-in emocional
+
+### Crear check-in
+
+```http
+POST /api/checkins
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Request:
+
+```json
+{
+  "emotionId": 1,
+  "intensity": 4,
+  "context": "Estudios",
+  "note": "Hoy tuve una presentacion"
+}
+```
+
+Reglas:
+
+- `emotionId` es obligatorio y debe existir.
+- La emocion seleccionada debe estar activa.
+- `intensity` es obligatoria y usa rango `1` a `5`.
+- `context` es obligatorio, maximo 100 caracteres.
+- `note` es opcional, maximo 500 caracteres.
+- El usuario se toma del JWT; el frontend no debe enviar `userId`.
+
+Respuesta `201 Created`:
+
+```json
+{
+  "id": 1,
+  "emotion": {
+    "id": 1,
+    "name": "Ansiedad"
+  },
+  "intensity": 4,
+  "context": "Estudios",
+  "note": "Hoy tuve una presentacion",
+  "createdAt": "2026-09-08T10:30:00"
+}
+```
+
+Errores:
+
+- `400`: validacion de campos o emocion inactiva.
+- `401`: token ausente, invalido o usuario inactivo.
+- `404`: usuario o emocion no encontrada.
+
+Prueba manual PowerShell:
+
+```powershell
+$token = "pega-aqui-un-jwt-valido"
+$body = @{
+  emotionId = 1
+  intensity = 4
+  context = "Estudios"
+  note = "Hoy tuve una presentacion"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:8080/api/checkins" `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+Archivos principales:
+
+- Backend: `EmotionalEntry`, `EmotionalEntryRepository`, `CreateCheckinRequest`, `CheckinResponse`, `CheckinService`, `CheckinController`.
+- Frontend: `CheckinsComponent`, `ApiService.createCheckin`, `CheckinRequest`, `Checkin`.

@@ -4,7 +4,8 @@ export interface UserProfile { id: number; name: string; email: string; birthDat
 export interface AuthResponse { token: string; user: UserProfile; }
 export interface RegisterRequest { name: string; email: string; password: string; birthDate: string; university: string; career: string; }
 export interface Emotion { id: number; name: string; active: boolean; createdAt: string; updatedAt: string; }
-export interface Checkin { id: number; emotion: Emotion; intensity: number; context: string; note?: string; createdAt: string; }
+export interface CheckinEmotion { id: number; name: string; }
+export interface Checkin { id: number; emotion: CheckinEmotion; intensity: number; context: string; note?: string; createdAt: string; }
 export interface CheckinRequest { emotionId: number; intensity: number; context: string; note?: string; }
 export interface MicroActivity { id: number; title: string; description: string; durationMinutes: number; active: boolean; }
 export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; }
