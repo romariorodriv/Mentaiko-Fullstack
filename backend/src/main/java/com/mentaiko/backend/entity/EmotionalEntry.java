@@ -43,7 +43,9 @@ public class EmotionalEntry {
 
     @PrePersist
     public void prePersist() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
     public Long getId() {
@@ -92,6 +94,10 @@ public class EmotionalEntry {
 
     public LocalDateTime getCreatedAt() {
         return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
 }
