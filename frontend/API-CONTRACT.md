@@ -104,3 +104,66 @@ Archivos principales:
 
 - Backend: `EmotionalEntry`, `EmotionalEntryRepository`, `CreateCheckinRequest`, `CheckinResponse`, `CheckinService`, `CheckinController`.
 - Frontend: `CheckinsComponent`, `ApiService.createCheckin`, `CheckinRequest`, `Checkin`.
+
+## HU06 - Consultar historial de check-ins
+
+### Listar check-ins propios
+
+```http
+GET /api/checkins?from=2026-09-01&to=2026-09-08&context=Estudios&page=0&size=10
+Authorization: Bearer <token>
+```
+
+Query parameters:
+
+- `from`: opcional, fecha inicial `YYYY-MM-DD`. Incluye el comienzo del dia.
+- `to`: opcional, fecha final `YYYY-MM-DD`. Incluye el dia completo.
+- `context`: opcional, busqueda parcial sin distinguir mayusculas.
+- `page`: opcional, empieza en `0`. No puede ser negativo.
+- `size`: opcional, por defecto `10`, maximo `50`.
+
+Orden:
+
+- `createdAt DESC`, del mas reciente al mas antiguo.
+- Las fechas se interpretan como dias del negocio en zona `America/Lima`.
+
+Respuesta `200 OK`:
+
+```json
+{
+  "content": [
+    {
+      "id": 1,
+      "emotion": {
+        "id": 2,
+        "name": "Ansiedad"
+      },
+      "intensity": 4,
+      "context": "Estudios",
+      "note": "Tuve una presentacion",
+      "createdAt": "2026-09-08T18:30:00"
+    }
+  ],
+  "totalElements": 1,
+  "totalPages": 1,
+  "number": 0,
+  "size": 10
+}
+```
+
+Errores:
+
+- `400`: rango de fechas invalido o paginacion invalida.
+- `401`: token ausente, invalido o usuario inactivo.
+- `404`: usuario autenticado no encontrado.
+
+Prueba manual PowerShell:
+
+```powershell
+$token = "pega-aqui-un-jwt-valido"
+
+Invoke-RestMethod `
+  -Method Get `
+  -Uri "http://localhost:8080/api/checkins?from=2026-09-01&to=2026-09-08&context=Estudios&page=0&size=10" `
+  -Headers @{ Authorization = "Bearer $token" }
+```

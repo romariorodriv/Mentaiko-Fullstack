@@ -9,34 +9,41 @@ import { ApiError, Checkin, Emotion } from '../../shared/models/models';
   standalone: true,
   imports: [ReactiveFormsModule, DatePipe],
   template: `
-<header class="page-head"><div><span class="eyebrow">REGISTRO EMOCIONAL</span><h1>Mis check-ins</h1><p>Registra como te sientes en este momento.</p></div><button class="btn primary" (click)="openForm()" [disabled]="loading()||!emotions().length">+ Nuevo check-in</button></header>
-@if(error()){<div class="alert error">{{error()}}</div>} @if(success()){<div class="alert success">{{success()}}</div>}
-@if(loading()){<div class="loading-panel">Cargando catalogo de emociones...</div>} @else {
-  <section class="panel">
-    <div class="panel-head"><div><span class="eyebrow">EMOCIONES ACTIVAS</span><h2>{{emotions().length}} disponibles</h2></div></div>
-    @if(emotions().length){
-      <div class="emotion-picker">
-        @for(e of emotions();track e.id){<button type="button" [class.selected]="form.controls.emotionId.value===e.id" (click)="selectEmotion(e)">{{e.name}}</button>}
-      </div>
-    } @else {
-      <div class="empty"><b>No hay emociones activas</b><p>Pide a un administrador que habilite opciones para poder registrar check-ins.</p></div>
-    }
+<header class="page-head"><div><span class="eyebrow">HISTORIAL EMOCIONAL</span><h1>Mis check-ins</h1><p>Revisa tus registros del mas reciente al mas antiguo.</p></div><button class="btn primary" (click)="openForm()" [disabled]="emotionsLoading()||!emotions().length">+ Nuevo check-in</button></header>
+@if(error()){<div class="alert error">{{error()}} <button type="button" (click)="retry()">Reintentar</button></div>} @if(success()){<div class="alert success">{{success()}}</div>}
+<section class="panel filters" [formGroup]="filtersForm"><label>Desde<input type="date" formControlName="from"></label><label>Hasta<input type="date" formControlName="to"></label><label>Contexto<input formControlName="context" placeholder="Ej. Estudios" maxlength="100"></label><button class="btn secondary" type="button" (click)="applyFilters()" [disabled]="historyLoading()">Filtrar</button><button class="btn secondary" type="button" (click)="clearFilters()" [disabled]="historyLoading()||!hasFilters()">Limpiar</button></section>
+@if(historyLoading()){<div class="loading-panel">Cargando historial...</div>} @else {
+  <section class="timeline">
+    @for(item of items();track item.id){<article class="checkin-card"><div class="emotion-dot" [style.--intensity]="item.intensity"></div><div class="checkin-main"><div><span class="emotion-name">{{item.emotion.name}}</span><span class="context-tag">{{item.context}}</span></div><p>{{item.note||'Sin nota personal'}}</p><small>{{item.createdAt|date:'d MMM y, h:mm a'}}</small></div><div class="intensity"><strong>{{item.intensity}}</strong><small>de 5</small></div></article>}
+    @empty {<div class="empty"><b>{{hasFilters()?'No hay resultados':'Aun no tienes check-ins'}}</b><p>{{hasFilters()?'Prueba con otro rango de fechas o contexto.':'Crea tu primer registro emocional cuando quieras.'}}</p></div>}
   </section>
+  @if(totalElements()>0){<div class="pagination"><button class="btn secondary" type="button" (click)="previousPage()" [disabled]="page()===0||historyLoading()">Anterior</button><span>Pagina {{page()+1}} de {{totalPages()}}</span><button class="btn secondary" type="button" (click)="nextPage()" [disabled]="page()+1>=totalPages()||historyLoading()">Siguiente</button></div>}
 }
-@if(created()){<section class="timeline recent-checkin"><article class="checkin-card"><div class="emotion-dot" [style.--intensity]="created()!.intensity"></div><div class="checkin-main"><div><span class="emotion-name">{{created()!.emotion.name}}</span><span class="context-tag">{{created()!.context}}</span></div><p>{{created()!.note||'Sin nota personal'}}</p><small>{{created()!.createdAt|date:'d MMM y, h:mm a'}}</small></div><div class="intensity"><strong>{{created()!.intensity}}</strong><small>de 5</small></div></article></section>}
-@if(showForm()){<div class="modal-layer"><button class="modal-backdrop" type="button" (click)="closeForm()" aria-label="Cerrar formulario"></button><form class="modal" [formGroup]="form" (ngSubmit)="save()"><div class="modal-head"><div><span class="eyebrow">NUEVO CHECK-IN</span><h2>Como te sientes?</h2></div><button type="button" (click)="closeForm()" aria-label="Cerrar">x</button></div><label>Emocion<select formControlName="emotionId"><option [ngValue]="0">Selecciona una emocion</option>@for(e of emotions();track e.id){<option [ngValue]="e.id">{{e.name}}</option>}</select></label>@if(form.controls.emotionId.touched&&form.controls.emotionId.invalid){<div class="field-error">Selecciona una emocion activa.</div>}<label>Intensidad <b>{{form.controls.intensity.value}}/5</b><input type="range" min="1" max="5" formControlName="intensity"></label><label>Contexto<input formControlName="context" placeholder="Estudios, trabajo, familia..." maxlength="100"></label>@if(form.controls.context.touched&&form.controls.context.invalid){<div class="field-error">El contexto es obligatorio y debe tener maximo 100 caracteres.</div>}<label>Nota opcional<textarea formControlName="note" rows="4" maxlength="500" placeholder="Que paso? Escribe solo lo que quieras recordar."></textarea><small>Maximo 500 caracteres.</small></label>@if(formError()){<div class="alert error">{{formError()}}</div>}<div class="modal-actions"><button type="button" class="btn secondary" (click)="closeForm()" [disabled]="saving()">Cancelar</button><button class="btn primary" [disabled]="form.invalid||saving()">{{saving()?'Guardando...':'Guardar check-in'}}</button></div></form></div>}
+@if(showForm()){<div class="modal-layer"><button class="modal-backdrop" type="button" (click)="closeForm()" aria-label="Cerrar formulario"></button><form class="modal" [formGroup]="form" (ngSubmit)="save()"><div class="modal-head"><div><span class="eyebrow">NUEVO CHECK-IN</span><h2>Como te sientes?</h2></div><button type="button" (click)="closeForm()" aria-label="Cerrar">x</button></div>@if(emotionsLoading()){<div class="loading-panel">Cargando emociones...</div>} @else {<label>Emocion<select formControlName="emotionId"><option [ngValue]="0">Selecciona una emocion</option>@for(e of emotions();track e.id){<option [ngValue]="e.id">{{e.name}}</option>}</select></label>@if(form.controls.emotionId.touched&&form.controls.emotionId.invalid){<div class="field-error">Selecciona una emocion activa.</div>}}<label>Intensidad <b>{{form.controls.intensity.value}}/5</b><input type="range" min="1" max="5" formControlName="intensity"></label><label>Contexto<input formControlName="context" placeholder="Estudios, trabajo, familia..." maxlength="100"></label>@if(form.controls.context.touched&&form.controls.context.invalid){<div class="field-error">El contexto es obligatorio y debe tener maximo 100 caracteres.</div>}<label>Nota opcional<textarea formControlName="note" rows="4" maxlength="500" placeholder="Que paso? Escribe solo lo que quieras recordar."></textarea><small>Maximo 500 caracteres.</small></label>@if(formError()){<div class="alert error">{{formError()}}</div>}<div class="modal-actions"><button type="button" class="btn secondary" (click)="closeForm()" [disabled]="saving()">Cancelar</button><button class="btn primary" [disabled]="form.invalid||saving()">{{saving()?'Guardando...':'Guardar check-in'}}</button></div></form></div>}
 `
 })
 export class CheckinsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   readonly emotions = signal<Emotion[]>([]);
-  readonly created = signal<Checkin | null>(null);
-  readonly loading = signal(true);
+  readonly items = signal<Checkin[]>([]);
+  readonly emotionsLoading = signal(true);
+  readonly historyLoading = signal(true);
   readonly saving = signal(false);
   readonly error = signal('');
   readonly success = signal('');
   readonly showForm = signal(false);
   readonly formError = signal('');
+  readonly page = signal(0);
+  readonly size = signal(10);
+  readonly totalElements = signal(0);
+  readonly totalPages = signal(0);
+
+  readonly filtersForm = this.fb.nonNullable.group({
+    from: [''],
+    to: [''],
+    context: ['', [Validators.maxLength(100)]]
+  });
+
   readonly form = this.fb.nonNullable.group({
     emotionId: [0, [Validators.required, Validators.min(1)]],
     intensity: [3, [Validators.required, Validators.min(1), Validators.max(5)]],
@@ -48,21 +55,88 @@ export class CheckinsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadEmotions();
+    this.loadHistory();
   }
 
   loadEmotions(): void {
-    this.loading.set(true);
-    this.error.set('');
+    this.emotionsLoading.set(true);
     this.api.emotions(true).subscribe({
       next: emotions => {
         this.emotions.set(emotions);
-        this.loading.set(false);
+        this.emotionsLoading.set(false);
       },
       error: error => {
-        this.loading.set(false);
+        this.emotionsLoading.set(false);
         this.error.set(this.errorMessage(error, 'No se pudo cargar el catalogo de emociones.'));
       }
     });
+  }
+
+  loadHistory(): void {
+    this.historyLoading.set(true);
+    this.error.set('');
+    const filters = this.filtersForm.getRawValue();
+    this.api.checkins({
+      from: filters.from,
+      to: filters.to,
+      context: filters.context,
+      page: this.page(),
+      size: this.size()
+    }).subscribe({
+      next: response => {
+        this.items.set(response.content);
+        this.totalElements.set(response.totalElements);
+        this.totalPages.set(response.totalPages);
+        this.page.set(response.number);
+        this.size.set(response.size);
+        this.historyLoading.set(false);
+      },
+      error: error => {
+        this.historyLoading.set(false);
+        this.error.set(this.errorMessage(error, 'No se pudo cargar el historial de check-ins.'));
+      }
+    });
+  }
+
+  retry(): void {
+    this.loadEmotions();
+    this.loadHistory();
+  }
+
+  applyFilters(): void {
+    if (this.filtersForm.invalid) {
+      this.filtersForm.markAllAsTouched();
+      return;
+    }
+    this.page.set(0);
+    this.loadHistory();
+  }
+
+  clearFilters(): void {
+    this.filtersForm.reset({from: '', to: '', context: ''});
+    this.page.set(0);
+    this.loadHistory();
+  }
+
+  hasFilters(): boolean {
+    const filters = this.filtersForm.getRawValue();
+    return !!filters.from || !!filters.to || !!filters.context.trim();
+  }
+
+  previousPage(): void {
+    if (this.page() === 0) {
+      return;
+    }
+    this.page.update(value => value - 1);
+    this.loadHistory();
+  }
+
+  nextPage(): void {
+    if (this.page() + 1 >= this.totalPages()) {
+      return;
+    }
+    this.page.update(value => value + 1);
+    this.loadHistory();
   }
 
   openForm(): void {
@@ -76,11 +150,6 @@ export class CheckinsComponent implements OnInit {
     this.formError.set('');
   }
 
-  selectEmotion(emotion: Emotion): void {
-    this.openForm();
-    this.form.patchValue({emotionId: emotion.id});
-  }
-
   save(): void {
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
@@ -90,11 +159,12 @@ export class CheckinsComponent implements OnInit {
     this.saving.set(true);
     this.clearMessages();
     this.api.createCheckin(this.form.getRawValue()).subscribe({
-      next: checkin => {
-        this.created.set(checkin);
+      next: () => {
         this.saving.set(false);
         this.success.set('Check-in emocional creado correctamente.');
         this.closeForm();
+        this.page.set(0);
+        this.loadHistory();
       },
       error: error => {
         this.saving.set(false);
