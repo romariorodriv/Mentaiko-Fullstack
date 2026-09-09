@@ -1,12 +1,15 @@
 package com.mentaiko.backend.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -235,6 +238,153 @@ class CheckinIntegrationTest {
                 .andExpect(jsonPath("$[0].name").value("Calma"));
     }
 
+    @Test
+    void authenticatedUserListsOnlyOwnCheckinsOrderedByNewestFirst() throws Exception {
+        User owner = saveUser("owner@example.com", Role.USER);
+        User other = saveUser("other@example.com", Role.USER);
+        Emotion calm = saveEmotion("Calma", true);
+        Emotion anxiety = saveEmotion("Ansiedad", true);
+        saveEntry(owner, calm, 2, "Estudios", "Primero", LocalDateTime.of(2026, 9, 7, 9, 0));
+        saveEntry(other, anxiety, 5, "Trabajo", "Ajeno", LocalDateTime.of(2026, 9, 8, 12, 0));
+        saveEntry(owner, anxiety, 4, "Trabajo", "Ultimo", LocalDateTime.of(2026, 9, 8, 18, 30));
+        String token = jwtService.generateToken(owner);
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("page", "0")
+                        .param("size", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[*].note", contains("Ultimo", "Primero")))
+                .andExpect(jsonPath("$.content[0].emotion.name").value("Ansiedad"))
+                .andExpect(jsonPath("$.content[0].user").doesNotExist())
+                .andExpect(jsonPath("$.content[0].passwordHash").doesNotExist())
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(10));
+    }
+
+    @Test
+    void listWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(get("/api/checkins"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void listReturnsEmptyPageWhenUserHasNoCheckins() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(0)))
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0));
+    }
+
+    @Test
+    void listSupportsRealPagination() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma", true);
+        saveEntry(user, emotion, 1, "Estudios", "Uno", LocalDateTime.of(2026, 9, 6, 8, 0));
+        saveEntry(user, emotion, 2, "Estudios", "Dos", LocalDateTime.of(2026, 9, 7, 8, 0));
+        saveEntry(user, emotion, 3, "Estudios", "Tres", LocalDateTime.of(2026, 9, 8, 8, 0));
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("page", "1")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].note").value("Uno"))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.number").value(1))
+                .andExpect(jsonPath("$.size").value(2));
+    }
+
+    @Test
+    void listFiltersByFromDateToDateAndInclusiveRange() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma", true);
+        saveEntry(user, emotion, 1, "Estudios", "Agosto", LocalDateTime.of(2026, 8, 31, 23, 59));
+        saveEntry(user, emotion, 2, "Estudios", "Inicio", LocalDateTime.of(2026, 9, 1, 0, 0));
+        saveEntry(user, emotion, 3, "Estudios", "Final", LocalDateTime.of(2026, 9, 8, 23, 59, 59));
+        saveEntry(user, emotion, 4, "Estudios", "Despues", LocalDateTime.of(2026, 9, 9, 0, 0));
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("from", "2026-09-01"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].note", contains("Despues", "Final", "Inicio")));
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("to", "2026-09-08"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].note", contains("Final", "Inicio", "Agosto")));
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("from", "2026-09-01")
+                        .param("to", "2026-09-08"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].note", contains("Final", "Inicio")));
+    }
+
+    @Test
+    void listFiltersByContextAndCombinesFilters() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma", true);
+        saveEntry(user, emotion, 2, "Estudios", "Viejo", LocalDateTime.of(2026, 9, 1, 10, 0));
+        saveEntry(user, emotion, 3, "Estudios grupales", "Coincide", LocalDateTime.of(2026, 9, 8, 10, 0));
+        saveEntry(user, emotion, 4, "Trabajo", "No coincide", LocalDateTime.of(2026, 9, 8, 11, 0));
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("context", "estudios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].note", contains("Coincide", "Viejo")));
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("from", "2026-09-08")
+                        .param("to", "2026-09-08")
+                        .param("context", "estudios"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[*].note", contains("Coincide")));
+    }
+
+    @Test
+    void listRejectsInvalidDateRangeAndPagination() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("from", "2026-09-09")
+                        .param("to", "2026-09-08"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("La fecha inicial no puede ser posterior a la fecha final"));
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("El numero de pagina no puede ser negativo"));
+
+        mockMvc.perform(get("/api/checkins")
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .param("size", "51"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("El tamano de pagina debe estar entre 1 y 50"));
+    }
+
     private Emotion saveEmotion(String name, boolean active) {
         Emotion emotion = new Emotion();
         emotion.setName(name);
@@ -254,6 +404,24 @@ class CheckinIntegrationTest {
         user.setRole(role);
         user.setActive(true);
         return userRepository.save(user);
+    }
+
+    private EmotionalEntry saveEntry(
+            User user,
+            Emotion emotion,
+            int intensity,
+            String context,
+            String note,
+            LocalDateTime createdAt
+    ) {
+        EmotionalEntry entry = new EmotionalEntry();
+        entry.setUser(user);
+        entry.setEmotion(emotion);
+        entry.setIntensity(intensity);
+        entry.setContext(context);
+        entry.setNote(note);
+        entry.setCreatedAt(createdAt);
+        return emotionalEntryRepository.save(entry);
     }
 
     private String validJson(Long emotionId, int intensity, String context, String note) {
