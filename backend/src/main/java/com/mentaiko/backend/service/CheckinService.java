@@ -16,6 +16,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.mentaiko.backend.dto.checkin.CheckinEmotionResponse;
 import com.mentaiko.backend.dto.checkin.CheckinResponse;
 import com.mentaiko.backend.dto.checkin.CreateCheckinRequest;
+import com.mentaiko.backend.dto.checkin.UpdateCheckinRequest;
 import com.mentaiko.backend.dto.common.PageResponse;
 import com.mentaiko.backend.entity.Emotion;
 import com.mentaiko.backend.entity.EmotionalEntry;
@@ -46,22 +47,26 @@ public class CheckinService {
 
     @Transactional
     public CheckinResponse create(String userEmail, CreateCheckinRequest request) {
-        User user = userRepository.findByEmailIgnoreCase(userEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-
-        if (!user.isActive()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalido o usuario inactivo");
-        }
-
-        Emotion emotion = emotionRepository.findById(request.emotionId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Emocion no encontrada"));
-
-        if (!emotion.isActive()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La emocion seleccionada no esta activa");
-        }
+        User user = findActiveUser(userEmail);
+        Emotion emotion = findActiveEmotion(request.emotionId());
 
         EmotionalEntry entry = new EmotionalEntry();
         entry.setUser(user);
+        entry.setEmotion(emotion);
+        entry.setIntensity(request.intensity());
+        entry.setContext(normalizeSpaces(request.context()));
+        entry.setNote(normalizeOptional(request.note()));
+
+        return toResponse(emotionalEntryRepository.save(entry));
+    }
+
+    @Transactional
+    public CheckinResponse update(String userEmail, Long id, UpdateCheckinRequest request) {
+        User user = findActiveUser(userEmail);
+        EmotionalEntry entry = emotionalEntryRepository.findByIdAndUserWithEmotion(id, user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in no encontrado"));
+        Emotion emotion = findActiveEmotion(request.emotionId());
+
         entry.setEmotion(emotion);
         entry.setIntensity(request.intensity());
         entry.setContext(normalizeSpaces(request.context()));
@@ -85,8 +90,7 @@ public class CheckinService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha inicial no puede ser posterior a la fecha final");
         }
 
-        User user = userRepository.findByEmailIgnoreCase(userEmail)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        User user = findActiveUser(userEmail);
 
         LocalDateTime fromDateTime = from == null ? null : from.atStartOfDay(BUSINESS_ZONE).toLocalDateTime();
         LocalDateTime toDateTime = to == null ? null : to.atTime(LocalTime.MAX);
@@ -116,6 +120,24 @@ public class CheckinService {
         if (size < 1 || size > MAX_PAGE_SIZE) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El tamano de pagina debe estar entre 1 y 50");
         }
+    }
+
+    private User findActiveUser(String userEmail) {
+        User user = userRepository.findByEmailIgnoreCase(userEmail)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        if (!user.isActive()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Token invalido o usuario inactivo");
+        }
+        return user;
+    }
+
+    private Emotion findActiveEmotion(Long emotionId) {
+        Emotion emotion = emotionRepository.findById(emotionId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Emocion no encontrada"));
+        if (!emotion.isActive()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La emocion seleccionada no esta activa");
+        }
+        return emotion;
     }
 
     private String normalizeSpaces(String value) {

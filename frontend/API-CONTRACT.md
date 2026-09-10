@@ -167,3 +167,87 @@ Invoke-RestMethod `
   -Uri "http://localhost:8080/api/checkins?from=2026-09-01&to=2026-09-08&context=Estudios&page=0&size=10" `
   -Headers @{ Authorization = "Bearer $token" }
 ```
+
+## HU07 - Editar check-in emocional propio
+
+### Actualizar check-in propio
+
+```http
+PUT /api/checkins/{id}
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+Path parameters:
+
+- `id`: identificador del check-in a actualizar.
+
+Request:
+
+```json
+{
+  "emotionId": 2,
+  "intensity": 4,
+  "context": "Estudios",
+  "note": "La presentacion termino mejor de lo esperado"
+}
+```
+
+Reglas:
+
+- El usuario se toma del JWT; el frontend no debe enviar `userId`.
+- El backend busca el registro por `id` y usuario autenticado.
+- Si el registro no existe o pertenece a otro usuario, responde `404`.
+- `emotionId` es obligatorio, debe existir y la emocion debe estar activa.
+- `intensity` es obligatoria y usa rango `1` a `5`.
+- `context` es obligatorio, maximo 100 caracteres.
+- `note` es opcional, maximo 500 caracteres.
+- Solo se actualizan `emotion`, `intensity`, `context` y `note`.
+- No se modifican `id`, propietario ni `createdAt`.
+
+Respuesta `200 OK`:
+
+```json
+{
+  "id": 15,
+  "emotion": {
+    "id": 2,
+    "name": "Tranquilidad"
+  },
+  "intensity": 4,
+  "context": "Estudios",
+  "note": "La presentacion termino mejor de lo esperado",
+  "createdAt": "2026-09-08T18:30:00"
+}
+```
+
+Errores:
+
+- `400`: validacion de campos o emocion inactiva.
+- `401`: token ausente, invalido o usuario inactivo.
+- `404`: check-in no encontrado, check-in ajeno, usuario no encontrado o emocion no encontrada.
+
+Prueba manual PowerShell:
+
+```powershell
+$token = "pega-aqui-un-jwt-valido"
+$checkinId = 15
+$body = @{
+  emotionId = 2
+  intensity = 4
+  context = "Estudios"
+  note = "La presentacion termino mejor de lo esperado"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Method Put `
+  -Uri "http://localhost:8080/api/checkins/$checkinId" `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+Archivos principales:
+
+- Backend: `UpdateCheckinRequest`, `EmotionalEntryRepository`, `CheckinService`, `CheckinController`, `CheckinIntegrationTest`.
+- Frontend: `CheckinsComponent`, `ApiService.updateCheckin`, `CheckinRequest`, `Checkin`.
