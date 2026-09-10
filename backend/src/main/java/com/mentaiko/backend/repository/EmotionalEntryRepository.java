@@ -1,6 +1,7 @@
 package com.mentaiko.backend.repository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,15 @@ import com.mentaiko.backend.entity.EmotionalEntry;
 import com.mentaiko.backend.entity.User;
 
 public interface EmotionalEntryRepository extends JpaRepository<EmotionalEntry, Long> {
+
+    @Query("""
+            select entry
+            from EmotionalEntry entry
+            join fetch entry.emotion
+            where entry.id = :id
+              and entry.user = :user
+            """)
+    Optional<EmotionalEntry> findByIdAndUserWithEmotion(@Param("id") Long id, @Param("user") User user);
 
     @Query(
             value = """

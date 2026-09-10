@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -383,6 +384,193 @@ class CheckinIntegrationTest {
                         .param("size", "51"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("El tamano de pagina debe estar entre 1 y 50"));
+    }
+
+    @Test
+    void authenticatedUserUpdatesOwnCheckinAndKeepsOwnerAndCreatedAt() throws Exception {
+        User owner = saveUser("owner@example.com", Role.USER);
+        Emotion oldEmotion = saveEmotion("Ansiedad", true);
+        Emotion newEmotion = saveEmotion("Tranquilidad", true);
+        LocalDateTime originalCreatedAt = LocalDateTime.of(2026, 9, 8, 18, 30);
+        EmotionalEntry entry = saveEntry(owner, oldEmotion, 2, "Estudios", "Nota inicial", originalCreatedAt);
+        String token = jwtService.generateToken(owner);
+
+        mockMvc.perform(put("/api/checkins/{id}", entry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "emotionId": %d,
+                                  "intensity": 4,
+                                  "context": "  Practicas  profesionales  ",
+                                  "note": "  Avance mejor de lo esperado  "
+                                }
+                                """.formatted(newEmotion.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(entry.getId()))
+                .andExpect(jsonPath("$.emotion.id").value(newEmotion.getId()))
+                .andExpect(jsonPath("$.emotion.name").value("Tranquilidad"))
+                .andExpect(jsonPath("$.emotion.active").doesNotExist())
+                .andExpect(jsonPath("$.intensity").value(4))
+                .andExpect(jsonPath("$.context").value("Practicas profesionales"))
+                .andExpect(jsonPath("$.note").value("Avance mejor de lo esperado"))
+                .andExpect(jsonPath("$.createdAt").value("2026-09-08T18:30:00"))
+                .andExpect(jsonPath("$.user").doesNotExist())
+                .andExpect(jsonPath("$.email").doesNotExist())
+                .andExpect(jsonPath("$.password").doesNotExist())
+                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+
+        EmotionalEntry updated = emotionalEntryRepository.findById(entry.getId()).orElseThrow();
+        assertThat(updated.getUser().getId()).isEqualTo(owner.getId());
+        assertThat(updated.getEmotion().getId()).isEqualTo(newEmotion.getId());
+        assertThat(updated.getIntensity()).isEqualTo(4);
+        assertThat(updated.getContext()).isEqualTo("Practicas profesionales");
+        assertThat(updated.getNote()).isEqualTo("Avance mejor de lo esperado");
+        assertThat(updated.getCreatedAt()).isEqualTo(originalCreatedAt);
+    }
+
+    @Test
+    void updateCheckinWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(put("/api/checkins/{id}", 1)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "emotionId": 1,
+                                  "intensity": 3,
+                                  "context": "Estudios"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateReturns404ForMissingId() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma", true);
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(put("/api/checkins/{id}", 999)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(emotion.getId(), 3, "Estudios", null)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Check-in no encontrado"));
+    }
+
+    @Test
+    void updateReturns404ForOtherUserCheckinAndDoesNotModifyIt() throws Exception {
+        User owner = saveUser("owner@example.com", Role.USER);
+        User other = saveUser("other@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma", true);
+        Emotion requestedEmotion = saveEmotion("Motivacion", true);
+        EmotionalEntry otherEntry = saveEntry(other, emotion, 2, "Trabajo", "Ajeno original", LocalDateTime.of(2026, 9, 8, 9, 0));
+        String ownerToken = jwtService.generateToken(owner);
+
+        mockMvc.perform(put("/api/checkins/{id}", otherEntry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(requestedEmotion.getId(), 5, "Estudios", "Intento ajeno")))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Check-in no encontrado"));
+
+        EmotionalEntry unchanged = emotionalEntryRepository.findById(otherEntry.getId()).orElseThrow();
+        assertThat(unchanged.getUser().getId()).isEqualTo(other.getId());
+        assertThat(unchanged.getEmotion().getId()).isEqualTo(emotion.getId());
+        assertThat(unchanged.getIntensity()).isEqualTo(2);
+        assertThat(unchanged.getContext()).isEqualTo("Trabajo");
+        assertThat(unchanged.getNote()).isEqualTo("Ajeno original");
+    }
+
+    @Test
+    void updateRejectsMissingAndInactiveEmotion() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        Emotion active = saveEmotion("Calma", true);
+        Emotion inactive = saveEmotion("Tristeza", false);
+        EmotionalEntry entry = saveEntry(user, active, 3, "Estudios", "Original", LocalDateTime.of(2026, 9, 8, 9, 0));
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(put("/api/checkins/{id}", entry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(999L, 3, "Estudios", null)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Emocion no encontrada"));
+
+        mockMvc.perform(put("/api/checkins/{id}", entry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(inactive.getId(), 3, "Estudios", null)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("La emocion seleccionada no esta activa"));
+    }
+
+    @Test
+    void updateRejectsIntensityOutsideRangeAndInvalidFields() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry entry = saveEntry(user, emotion, 3, "Estudios", "Original", LocalDateTime.of(2026, 9, 8, 9, 0));
+        String token = jwtService.generateToken(user);
+        String longContext = "a".repeat(101);
+        String longNote = "b".repeat(501);
+
+        mockMvc.perform(put("/api/checkins/{id}", entry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(emotion.getId(), 0, "Estudios", null)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.intensity").exists());
+
+        mockMvc.perform(put("/api/checkins/{id}", entry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(emotion.getId(), 6, "Estudios", null)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.intensity").exists());
+
+        mockMvc.perform(put("/api/checkins/{id}", entry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(emotion.getId(), 3, "", null)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.context").exists());
+
+        mockMvc.perform(put("/api/checkins/{id}", entry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validJson(emotion.getId(), 3, longContext, longNote)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.context").exists())
+                .andExpect(jsonPath("$.errors.note").exists());
+    }
+
+    @Test
+    void updateIgnoresUserIdFromRequestAndAllowsEmptyNote() throws Exception {
+        User owner = saveUser("owner@example.com", Role.USER);
+        User other = saveUser("other@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Motivacion", true);
+        EmotionalEntry entry = saveEntry(owner, emotion, 2, "Trabajo", "Original", LocalDateTime.of(2026, 9, 8, 9, 0));
+        String token = jwtService.generateToken(owner);
+
+        mockMvc.perform(put("/api/checkins/{id}", entry.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": %d,
+                                  "emotionId": %d,
+                                  "intensity": 5,
+                                  "context": "Trabajo",
+                                  "note": ""
+                                }
+                                """.formatted(other.getId(), emotion.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user").doesNotExist())
+                .andExpect(jsonPath("$.note").doesNotExist());
+
+        EmotionalEntry updated = emotionalEntryRepository.findById(entry.getId()).orElseThrow();
+        assertThat(updated.getUser().getId()).isEqualTo(owner.getId());
+        assertThat(updated.getUser().getId()).isNotEqualTo(other.getId());
+        assertThat(updated.getNote()).isNull();
     }
 
     private Emotion saveEmotion(String name, boolean active) {
