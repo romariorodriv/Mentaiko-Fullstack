@@ -10,21 +10,23 @@ import { ApiError, Checkin, Emotion } from '../../shared/models/models';
   imports: [ReactiveFormsModule, DatePipe],
   template: `
 <header class="page-head"><div><span class="eyebrow">HISTORIAL EMOCIONAL</span><h1>Mis check-ins</h1><p>Revisa tus registros del mas reciente al mas antiguo.</p></div><button class="btn primary" (click)="openForm()" [disabled]="emotionsLoading()||!emotions().length">+ Nuevo check-in</button></header>
-@if(error()){<div class="alert error">{{error()}} <button type="button" (click)="retry()">Reintentar</button></div>} @if(success()){<div class="alert success">{{success()}}</div>}
+@if(error()){<div class="alert error" role="alert">{{error()}} <button type="button" (click)="retry()">Reintentar</button></div>} @if(success()){<div class="alert success">{{success()}}</div>}
 <section class="panel filters" [formGroup]="filtersForm"><label>Desde<input type="date" formControlName="from"></label><label>Hasta<input type="date" formControlName="to"></label><label>Contexto<input formControlName="context" placeholder="Ej. Estudios" maxlength="100"></label><button class="btn secondary" type="button" (click)="applyFilters()" [disabled]="historyLoading()">Filtrar</button><button class="btn secondary" type="button" (click)="clearFilters()" [disabled]="historyLoading()||!hasFilters()">Limpiar</button></section>
 @if(historyLoading()){<div class="loading-panel">Cargando historial...</div>} @else {
   <section class="timeline">
-    @for(item of items();track item.id){<article class="checkin-card"><div class="emotion-dot" [style.--intensity]="item.intensity"></div><div class="checkin-main"><div><span class="emotion-name">{{item.emotion.name}}</span><span class="context-tag">{{item.context}}</span></div><p>{{item.note||'Sin nota personal'}}</p><small>{{item.createdAt|date:'d MMM y, h:mm a'}}</small></div><div class="intensity"><strong>{{item.intensity}}</strong><small>de 5</small></div><div class="row-actions"><button type="button" (click)="openEdit(item)" [disabled]="emotionsLoading()" [attr.aria-label]="'Editar check-in de '+item.emotion.name">Editar</button></div></article>}
+    @for(item of items();track item.id){<article class="checkin-card"><div class="emotion-dot" [style.--intensity]="item.intensity"></div><div class="checkin-main"><div><span class="emotion-name">{{item.emotion.name}}</span><span class="context-tag">{{item.context}}</span></div><p>{{item.note||'Sin nota personal'}}</p><small>{{item.createdAt|date:'d MMM y, h:mm a'}}</small></div><div class="intensity"><strong>{{item.intensity}}</strong><small>de 5</small></div><div class="row-actions"><button type="button" (click)="openEdit(item)" [disabled]="emotionsLoading()||deleting()" [attr.aria-label]="'Editar check-in de '+item.emotion.name">Editar</button><button class="danger-text" type="button" (click)="openDeleteConfirmation(item)" [disabled]="deleting()" [attr.aria-label]="'Eliminar check-in de '+item.emotion.name">Eliminar</button></div></article>}
     @empty {<div class="empty"><b>{{hasFilters()?'No hay resultados':'Aun no tienes check-ins'}}</b><p>{{hasFilters()?'Prueba con otro rango de fechas o contexto.':'Crea tu primer registro emocional cuando quieras.'}}</p></div>}
   </section>
   @if(totalElements()>0){<div class="pagination"><button class="btn secondary" type="button" (click)="previousPage()" [disabled]="page()===0||historyLoading()">Anterior</button><span>Pagina {{page()+1}} de {{totalPages()}}</span><button class="btn secondary" type="button" (click)="nextPage()" [disabled]="page()+1>=totalPages()||historyLoading()">Siguiente</button></div>}
 }
 @if(showForm()){<div class="modal-layer"><button class="modal-backdrop" type="button" (click)="closeForm()" aria-label="Cerrar formulario"></button><form class="modal" [formGroup]="form" (ngSubmit)="save()" role="dialog" aria-modal="true" aria-labelledby="checkinFormTitle"><div class="modal-head"><div><span class="eyebrow">{{isEditing()?'EDITAR CHECK-IN':'NUEVO CHECK-IN'}}</span><h2 id="checkinFormTitle">{{isEditing()?'Actualizar registro':'Como te sientes?'}}</h2></div><button type="button" (click)="closeForm()" aria-label="Cerrar">x</button></div>@if(emotionsLoading()){<div class="loading-panel">Cargando emociones...</div>} @else {<label>Emocion<select #emotionSelect formControlName="emotionId" aria-describedby="emotionError"><option [ngValue]="0">Selecciona una emocion</option>@for(e of emotions();track e.id){<option [ngValue]="e.id">{{e.name}}</option>}</select></label>@if(form.controls.emotionId.touched&&form.controls.emotionId.invalid){<div class="field-error" id="emotionError">Selecciona una emocion activa.</div>}}<label>Intensidad <b>{{form.controls.intensity.value}}/5</b><input type="range" min="1" max="5" formControlName="intensity"></label><label>Contexto<input formControlName="context" placeholder="Estudios, trabajo, familia..." maxlength="100" aria-describedby="contextError"></label>@if(form.controls.context.touched&&form.controls.context.invalid){<div class="field-error" id="contextError">El contexto es obligatorio y debe tener maximo 100 caracteres.</div>}<label>Nota opcional<textarea formControlName="note" rows="4" maxlength="500" placeholder="Que paso? Escribe solo lo que quieras recordar."></textarea><small>Maximo 500 caracteres.</small></label>@if(formError()){<div class="alert error" role="alert">{{formError()}}</div>}<div class="modal-actions"><button type="button" class="btn secondary" (click)="closeForm()" [disabled]="saving()">Cancelar</button><button class="btn primary" [disabled]="form.invalid||saving()">{{saving()?(isEditing()?'Actualizando...':'Guardando...'):(isEditing()?'Guardar cambios':'Guardar check-in')}}</button></div></form></div>}
+@if(deleteTarget()){<div class="modal-layer"><button class="modal-backdrop" type="button" (click)="closeDeleteConfirmation()" [disabled]="deleting()" aria-label="Cancelar eliminacion"></button><section class="modal" role="dialog" aria-modal="true" aria-labelledby="deleteCheckinTitle"><div class="modal-head"><div><span class="eyebrow danger-text">ELIMINAR CHECK-IN</span><h2 id="deleteCheckinTitle">Eliminar {{deleteTarget()?.emotion?.name}}</h2></div><button type="button" (click)="closeDeleteConfirmation()" [disabled]="deleting()" aria-label="Cerrar">x</button></div><p>Esta accion no se puede deshacer. El check-in desaparecera de tu historial.</p>@if(deleteError()){<div class="alert error" role="alert">{{deleteError()}}</div>}<div class="modal-actions"><button type="button" class="btn secondary" (click)="closeDeleteConfirmation()" [disabled]="deleting()">Cancelar</button><button #deleteConfirmButton type="button" class="btn primary" (click)="confirmDelete()" [disabled]="deleting()">{{deleting()?'Eliminando...':'Eliminar check-in'}}</button></div></section></div>}
 `
 })
 export class CheckinsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   @ViewChild('emotionSelect') private emotionSelect?: ElementRef<HTMLSelectElement>;
+  @ViewChild('deleteConfirmButton') private deleteConfirmButton?: ElementRef<HTMLButtonElement>;
 
   readonly emotions = signal<Emotion[]>([]);
   readonly items = signal<Checkin[]>([]);
@@ -40,6 +42,9 @@ export class CheckinsComponent implements OnInit {
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
   readonly editingId = signal<number | null>(null);
+  readonly deleteTarget = signal<Checkin | null>(null);
+  readonly deleting = signal(false);
+  readonly deleteError = signal('');
 
   readonly filtersForm = this.fb.nonNullable.group({
     from: [''],
@@ -202,6 +207,49 @@ export class CheckinsComponent implements OnInit {
       error: error => {
         this.saving.set(false);
         this.formError.set(this.errorMessage(error, editingId === null ? 'No se pudo crear el check-in. Revisa los datos e intenta nuevamente.' : 'No se pudo actualizar el check-in. Revisa los datos e intenta nuevamente.'));
+      }
+    });
+  }
+
+  openDeleteConfirmation(item: Checkin): void {
+    if (this.deleting()) {
+      return;
+    }
+    this.clearMessages();
+    this.deleteError.set('');
+    this.deleteTarget.set(item);
+    setTimeout(() => this.deleteConfirmButton?.nativeElement.focus());
+  }
+
+  closeDeleteConfirmation(): void {
+    if (this.deleting()) {
+      return;
+    }
+    this.deleteTarget.set(null);
+    this.deleteError.set('');
+  }
+
+  confirmDelete(): void {
+    const target = this.deleteTarget();
+    if (!target || this.deleting()) {
+      return;
+    }
+
+    this.deleting.set(true);
+    this.deleteError.set('');
+    this.api.deleteCheckin(target.id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.deleteTarget.set(null);
+        this.success.set('Check-in eliminado correctamente');
+        if (this.items().length === 1 && this.page() > 0) {
+          this.page.update(value => value - 1);
+        }
+        this.loadHistory();
+      },
+      error: error => {
+        this.deleting.set(false);
+        this.deleteError.set(this.errorMessage(error, 'No se pudo eliminar el check-in. Intenta nuevamente.'));
       }
     });
   }

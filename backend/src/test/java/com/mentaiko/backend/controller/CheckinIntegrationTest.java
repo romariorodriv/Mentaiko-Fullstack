@@ -3,10 +3,12 @@ package com.mentaiko.backend.controller;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.time.LocalDate;
@@ -571,6 +573,66 @@ class CheckinIntegrationTest {
         assertThat(updated.getUser().getId()).isEqualTo(owner.getId());
         assertThat(updated.getUser().getId()).isNotEqualTo(other.getId());
         assertThat(updated.getNote()).isNull();
+    }
+
+    @Test
+    void authenticatedUserDeletesOwnCheckinAndReturnsEmpty204() throws Exception {
+        User owner = saveUser("owner@example.com", Role.USER);
+        User other = saveUser("other@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry target = saveEntry(owner, emotion, 3, "Estudios", "Eliminar", LocalDateTime.now());
+        EmotionalEntry ownRemaining = saveEntry(owner, emotion, 4, "Familia", "Conservar", LocalDateTime.now());
+        EmotionalEntry otherRemaining = saveEntry(other, emotion, 2, "Trabajo", "Ajeno", LocalDateTime.now());
+        String token = jwtService.generateToken(owner);
+
+        mockMvc.perform(delete("/api/checkins/{id}", target.getId())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isNoContent())
+                .andExpect(content().string(""));
+
+        assertThat(emotionalEntryRepository.findById(target.getId())).isEmpty();
+        assertThat(emotionalEntryRepository.findById(ownRemaining.getId())).isPresent();
+        assertThat(emotionalEntryRepository.findById(otherRemaining.getId())).isPresent();
+        assertThat(userRepository.findById(owner.getId())).isPresent();
+        assertThat(emotionRepository.findById(emotion.getId())).isPresent();
+    }
+
+    @Test
+    void deleteCheckinWithoutTokenReturns401() throws Exception {
+        mockMvc.perform(delete("/api/checkins/{id}", 1L))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deleteReturnsApiError404ForMissingId() throws Exception {
+        User user = saveUser("usuario@example.com", Role.USER);
+        String token = jwtService.generateToken(user);
+
+        mockMvc.perform(delete("/api/checkins/{id}", 999999L)
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Not Found"))
+                .andExpect(jsonPath("$.message").value("Check-in no encontrado"))
+                .andExpect(jsonPath("$.path").value("/api/checkins/999999"));
+    }
+
+    @Test
+    void deleteReturns404ForOtherUserCheckinAndKeepsIt() throws Exception {
+        User owner = saveUser("owner@example.com", Role.USER);
+        User other = saveUser("other@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry otherEntry = saveEntry(other, emotion, 2, "Trabajo", "Ajeno", LocalDateTime.now());
+        String token = jwtService.generateToken(owner);
+
+        mockMvc.perform(delete("/api/checkins/{id}", otherEntry.getId())
+                        .queryParam("userId", other.getId().toString())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Check-in no encontrado"));
+
+        assertThat(emotionalEntryRepository.findById(otherEntry.getId())).isPresent();
     }
 
     private Emotion saveEmotion(String name, boolean active) {

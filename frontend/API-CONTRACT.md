@@ -251,3 +251,62 @@ Archivos principales:
 
 - Backend: `UpdateCheckinRequest`, `EmotionalEntryRepository`, `CheckinService`, `CheckinController`, `CheckinIntegrationTest`.
 - Frontend: `CheckinsComponent`, `ApiService.updateCheckin`, `CheckinRequest`, `Checkin`.
+
+## HU08 - Eliminar check-in emocional propio
+
+### Eliminar check-in propio
+
+```http
+DELETE /api/checkins/{id}
+Authorization: Bearer <token>
+```
+
+Path parameters:
+
+- `id`: identificador `Long` del check-in a eliminar.
+
+Reglas:
+
+- El usuario se obtiene del JWT; no se recibe ni utiliza `userId`.
+- El backend busca el registro por `id` y usuario autenticado antes de eliminarlo.
+- Un registro inexistente o perteneciente a otro usuario responde igual: `404 Not Found` con el mensaje `Check-in no encontrado`.
+- La eliminacion no modifica otros check-ins, el usuario propietario ni la emocion relacionada.
+- Angular solicita confirmacion, bloquea envios duplicados y conserva filtros y paginacion. Si elimina la ultima fila de una pagina posterior, retrocede una pagina.
+
+Respuesta correcta:
+
+```http
+204 No Content
+```
+
+La respuesta exitosa no contiene cuerpo HTTP.
+
+Errores:
+
+- `401 Unauthorized`: token ausente, invalido o vencido.
+- `404 Not Found`: usuario o check-in no encontrado, incluido un check-in ajeno.
+- `500 Internal Server Error`: error inesperado con formato `ApiError`.
+
+Prueba manual PowerShell:
+
+```powershell
+$token = "PEGA_AQUI_UN_TOKEN_DE_PRUEBA"
+$checkinId = 15
+
+Invoke-WebRequest `
+  -Method Delete `
+  -Uri "http://localhost:8080/api/checkins/$checkinId" `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+Escenarios de prueba manual:
+
+1. Eliminacion propia: inicia sesion, crea un check-in, abre `/app/checkins`, pulsa `Eliminar`, confirma y comprueba el mensaje `Check-in eliminado correctamente` y que ya no aparece.
+2. ID inexistente: envia `DELETE` con un ID inexistente, confirma el `404` y verifica que ningun registro haya cambiado.
+3. Check-in ajeno: crea usuarios A y B, crea un check-in con B e intenta eliminarlo con el token de A; debe responder `404` y seguir visible para B.
+4. Ultima fila: navega a una pagina posterior con un unico registro, eliminalo y confirma que vuelve a la pagina anterior manteniendo los filtros.
+
+Archivos principales:
+
+- Backend: `EmotionalEntryRepository`, `CheckinService`, `CheckinController`, `CheckinIntegrationTest`.
+- Frontend: `CheckinsComponent`, `ApiService.deleteCheckin`.
