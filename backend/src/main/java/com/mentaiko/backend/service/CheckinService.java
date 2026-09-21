@@ -38,8 +38,7 @@ public class CheckinService {
     public CheckinService(
             EmotionalEntryRepository emotionalEntryRepository,
             EmotionRepository emotionRepository,
-            UserRepository userRepository
-    ) {
+            UserRepository userRepository) {
         this.emotionalEntryRepository = emotionalEntryRepository;
         this.emotionRepository = emotionRepository;
         this.userRepository = userRepository;
@@ -75,6 +74,15 @@ public class CheckinService {
         return toResponse(emotionalEntryRepository.save(entry));
     }
 
+    @Transactional
+    public void delete(String userEmail, Long id) {
+        User user = findActiveUser(userEmail);
+        EmotionalEntry entry = emotionalEntryRepository.findByIdAndUserWithEmotion(id, user)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in no encontrado"));
+
+        emotionalEntryRepository.delete(entry);
+    }
+
     @Transactional(readOnly = true)
     public PageResponse<CheckinResponse> list(
             String userEmail,
@@ -82,12 +90,12 @@ public class CheckinService {
             LocalDate to,
             String context,
             int page,
-            int size
-    ) {
+            int size) {
         validatePagination(page, size);
 
         if (from != null && to != null && from.isAfter(to)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha inicial no puede ser posterior a la fecha final");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La fecha inicial no puede ser posterior a la fecha final");
         }
 
         User user = findActiveUser(userEmail);
@@ -96,21 +104,30 @@ public class CheckinService {
         LocalDateTime toDateTime = to == null ? null : to.atTime(LocalTime.MAX);
         String normalizedContext = normalizeFilter(context);
 
-        Page<EmotionalEntry> result = emotionalEntryRepository.findHistory(
-                user,
-                fromDateTime,
-                toDateTime,
-                normalizedContext,
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"))
-        );
+        PageRequest pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<EmotionalEntry> result = normalizedContext == null
+                ? emotionalEntryRepository.findHistory(
+                        user,
+                        fromDateTime,
+                        toDateTime,
+                        pageable)
+                : emotionalEntryRepository.findHistoryByContext(
+                        user,
+                        fromDateTime,
+                        toDateTime,
+                        normalizedContext,
+                        pageable);
 
         return new PageResponse<>(
                 result.getContent().stream().map(this::toResponse).toList(),
                 result.getTotalElements(),
                 result.getTotalPages(),
                 result.getNumber(),
-                result.getSize()
-        );
+                result.getSize());
     }
 
     private void validatePagination(int page, int size) {
@@ -166,7 +183,6 @@ public class CheckinService {
                 entry.getIntensity(),
                 entry.getContext(),
                 entry.getNote(),
-                entry.getCreatedAt()
-        );
+                entry.getCreatedAt());
     }
 }

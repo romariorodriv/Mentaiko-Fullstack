@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,6 +44,12 @@ public class CheckinController {
             @Valid @RequestBody UpdateCheckinRequest request
     ) {
         return checkinService.update(authentication.getName(), id, request);
+    }
+
+    @DeleteMapping("/api/checkins/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(Authentication authentication, @PathVariable Long id) {
+        checkinService.delete(authentication.getName(), id);
     }
 
     @GetMapping("/api/checkins")
