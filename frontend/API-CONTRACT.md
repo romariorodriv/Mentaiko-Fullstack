@@ -310,3 +310,49 @@ Archivos principales:
 
 - Backend: `EmotionalEntryRepository`, `CheckinService`, `CheckinController`, `CheckinIntegrationTest`.
 - Frontend: `CheckinsComponent`, `ApiService.deleteCheckin`.
+
+## HU09 - Catalogo y administracion de microactividades
+
+### Listar microactividades
+
+```http
+GET /api/micro-activities?activeOnly=true
+Authorization: Bearer <token>
+```
+
+- Un usuario `USER` siempre recibe solo actividades activas, incluso si envia `activeOnly=false`.
+- Un usuario `ADMIN` puede enviar `activeOnly=false` para consultar el catalogo completo.
+- La respuesta se ordena por titulo y contiene `id`, `title`, `description`, `durationMinutes`, `active`, `createdAt` y `updatedAt`.
+
+### Crear una microactividad
+
+```http
+POST /api/admin/micro-activities
+Authorization: Bearer <token-admin>
+Content-Type: application/json
+```
+
+```json
+{
+  "title": "Pausa consciente",
+  "description": "Respira lentamente durante unos minutos.",
+  "durationMinutes": 4
+}
+```
+
+La actividad se crea activa. El titulo admite hasta 120 caracteres, la descripcion hasta 500 y la duracion debe estar entre 1 y 120 minutos. Titulos equivalentes sin distinguir mayusculas ni espacios repetidos responden `409 Conflict`.
+
+### Actualizar una microactividad
+
+```http
+PUT /api/admin/micro-activities/{id}
+Authorization: Bearer <token-admin>
+Content-Type: application/json
+```
+
+Se puede enviar uno o varios campos: `title`, `description`, `durationMinutes` y `active`. Un cuerpo sin campos modificables responde `400`; un ID inexistente responde `404`. Desactivar conserva el registro fisico.
+
+Archivos principales:
+
+- Backend: `MicroActivity`, `MicroActivityRepository`, DTO de microactividades, `MicroActivityService`, `MicroActivityController`, `MicroActivityIntegrationTest`.
+- Frontend: `ActivitiesComponent`, `AdminActivitiesComponent`, `ApiService.activities`, `ApiService.createActivity`, `ApiService.updateActivity`.
