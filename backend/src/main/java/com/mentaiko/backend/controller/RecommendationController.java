@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -37,5 +38,10 @@ public class RecommendationController {
     @GetMapping("/api/recommendations/me")
     public List<RecommendationResponse> mine(Authentication authentication) {
         return recommendationService.listMine(authentication.getName());
+    }
+
+    @PostMapping("/api/recommendations/{id}/complete")
+    public RecommendationResponse complete(Authentication authentication, @PathVariable Long id) {
+        return recommendationService.complete(authentication.getName(), id);
     }
 }

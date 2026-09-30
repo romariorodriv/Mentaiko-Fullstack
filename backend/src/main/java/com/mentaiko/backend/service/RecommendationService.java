@@ -64,6 +64,19 @@ public class RecommendationService {
                 .toList();
     }
 
+    @Transactional
+    public RecommendationResponse complete(String userEmail, Long id) {
+        User user = findActiveUser(userEmail);
+        ActivityRecommendation recommendation = recommendationRepository.findByIdAndUserWithDetails(id, user)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recomendacion no encontrada"
+                ));
+
+        recommendation.complete();
+        return toResponse(recommendation);
+    }
+
     private RecommendationResponse createRecommendation(User user, EmotionalEntry checkin) {
         Emotion emotion = checkin.getEmotion();
         ActivityChoice choice = chooseActivity(emotion);
@@ -117,7 +130,7 @@ public class RecommendationService {
                 recommendation.getReason(),
                 recommendation.isFallbackUsed(),
                 recommendation.getCreatedAt(),
-                null
+                recommendation.getCompletedAt()
         );
     }
 

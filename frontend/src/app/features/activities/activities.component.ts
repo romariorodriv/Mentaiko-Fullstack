@@ -18,6 +18,9 @@ import { MicroActivity, Recommendation } from '../../shared/models/models';
     @if (error()) {
       <div class="alert error">{{ error() }}</div>
     }
+    @if (success()) {
+      <div class="alert success">{{ success() }}</div>
+    }
 
     @if (loading()) {
       <div class="loading-panel">Cargando microactividades...</div>
@@ -35,7 +38,13 @@ import { MicroActivity, Recommendation } from '../../shared/models/models';
                   <p>{{ recommendation.activity.description }}</p>
                   <small>{{ recommendation.reason }}</small>
                 </div>
-                <span class="status-pill">Pendiente</span>
+                @if (recommendation.completedAt) {
+                  <span class="status-pill done">Completada</span>
+                } @else {
+                  <button class="btn secondary" (click)="complete(recommendation)" [disabled]="busyId() === recommendation.id">
+                    {{ busyId() === recommendation.id ? 'Guardando...' : 'Marcar completa' }}
+                  </button>
+                }
               </article>
             } @empty {
               <div class="empty">
@@ -74,7 +83,9 @@ export class ActivitiesComponent implements OnInit {
   readonly activities = signal<MicroActivity[]>([]);
   readonly recommendations = signal<Recommendation[]>([]);
   readonly loading = signal(true);
+  readonly busyId = signal<number | null>(null);
   readonly error = signal('');
+  readonly success = signal('');
 
   constructor(private readonly api: ApiService) {}
 
@@ -85,6 +96,7 @@ export class ActivitiesComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set('');
+    this.success.set('');
     this.api.activities(true).subscribe({
       next: activities => {
         this.activities.set(activities);
@@ -106,6 +118,27 @@ export class ActivitiesComponent implements OnInit {
       error: () => {
         this.loading.set(false);
         this.error.set('No se pudieron cargar tus recomendaciones.');
+      }
+    });
+  }
+
+  complete(recommendation: Recommendation): void {
+    if (this.busyId() !== null) {
+      return;
+    }
+
+    this.busyId.set(recommendation.id);
+    this.error.set('');
+    this.success.set('');
+    this.api.completeRecommendation(recommendation.id).subscribe({
+      next: updated => {
+        this.busyId.set(null);
+        this.success.set(`Microactividad "${updated.activity.title}" completada.`);
+        this.recommendations.update(items => items.map(item => item.id === updated.id ? updated : item));
+      },
+      error: () => {
+        this.busyId.set(null);
+        this.error.set('No se pudo completar la recomendacion.');
       }
     });
   }

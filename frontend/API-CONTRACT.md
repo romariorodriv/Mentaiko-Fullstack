@@ -419,3 +419,46 @@ Archivos principales:
 
 - Backend: `EmotionActivityRule`, `ActivityRecommendation`, repositorios de reglas y recomendaciones, `RecommendationService`, `RecommendationController`, `RecommendationIntegrationTest`.
 - Frontend: `CheckinsComponent`, `ActivitiesComponent`, `ApiService.recommend`, `ApiService.recommendations`.
+
+## HU11 - Completar una recomendacion
+
+### Marcar recomendacion propia como completada
+
+```http
+POST /api/recommendations/{id}/complete
+Authorization: Bearer <token>
+```
+
+Reglas:
+
+- Solo se puede completar una recomendacion propia.
+- Una recomendacion inexistente o ajena responde `404` con `Recomendacion no encontrada`.
+- La operacion es idempotente: si ya estaba completada, devuelve la misma recomendacion sin cambiar `completedAt`.
+- No requiere body.
+
+Respuesta `200 OK`:
+
+```json
+{
+  "id": 1,
+  "checkinId": 15,
+  "activity": {
+    "id": 3,
+    "title": "Respiracion guiada",
+    "description": "Inhala y exhala con calma",
+    "durationMinutes": 5,
+    "active": true,
+    "createdAt": "2026-09-30T14:00:00",
+    "updatedAt": "2026-09-30T14:00:00"
+  },
+  "reason": "Recomendacion asociada a la emocion Ansiedad.",
+  "fallbackUsed": false,
+  "createdAt": "2026-09-30T14:05:00",
+  "completedAt": "2026-09-30T14:15:00"
+}
+```
+
+Archivos principales:
+
+- Backend: `ActivityRecommendation`, `RecommendationService.complete`, `RecommendationController.complete`, `RecommendationIntegrationTest`.
+- Frontend: `ActivitiesComponent`, `ApiService.completeRecommendation`.

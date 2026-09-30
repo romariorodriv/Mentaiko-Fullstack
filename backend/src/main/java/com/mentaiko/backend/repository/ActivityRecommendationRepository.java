@@ -20,6 +20,19 @@ public interface ActivityRecommendationRepository extends JpaRepository<Activity
             from ActivityRecommendation recommendation
             join fetch recommendation.activity
             join fetch recommendation.checkin
+            where recommendation.id = :id
+              and recommendation.user = :user
+            """)
+    Optional<ActivityRecommendation> findByIdAndUserWithDetails(
+            @Param("id") Long id,
+            @Param("user") User user
+    );
+
+    @Query("""
+            select recommendation
+            from ActivityRecommendation recommendation
+            join fetch recommendation.activity
+            join fetch recommendation.checkin
             where recommendation.user = :user
             order by recommendation.createdAt desc, recommendation.id desc
             """)

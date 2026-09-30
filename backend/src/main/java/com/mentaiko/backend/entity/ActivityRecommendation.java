@@ -44,6 +44,12 @@ public class ActivityRecommendation {
     @Column(name = "fallback_used", nullable = false)
     private boolean fallbackUsed;
 
+    @Column(nullable = false)
+    private boolean completed;
+
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -94,6 +100,21 @@ public class ActivityRecommendation {
 
     public void setFallbackUsed(boolean fallbackUsed) {
         this.fallbackUsed = fallbackUsed;
+    }
+
+    public boolean isCompleted() {
+        return completed;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public void complete() {
+        if (!completed) {
+            completed = true;
+            completedAt = LocalDateTime.now();
+        }
     }
 
     public LocalDateTime getCreatedAt() {

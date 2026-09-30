@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.mentaiko.backend.entity.Emotion;
 import com.mentaiko.backend.entity.EmotionActivityRule;
 import com.mentaiko.backend.entity.EmotionalEntry;
+import com.mentaiko.backend.entity.ActivityRecommendation;
 import com.mentaiko.backend.entity.MicroActivity;
 import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.enums.Role;
@@ -221,6 +222,60 @@ class RecommendationIntegrationTest {
                 .andExpect(jsonPath("$.message").value("No hay microactividades activas disponibles"));
     }
 
+    @Test
+    void completeRecommendationRequiresToken() throws Exception {
+        mockMvc.perform(post("/api/recommendations/1/complete"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void ownerCanCompleteRecommendationAndOperationIsIdempotent() throws Exception {
+        User user = saveUser("complete-owner@example.com");
+        Emotion emotion = saveEmotion("Ansiedad", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Respirar", true);
+        ActivityRecommendation recommendation = saveRecommendation(user, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/complete", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(recommendation.getId()))
+                .andExpect(jsonPath("$.completedAt").exists());
+
+        java.time.LocalDateTime firstCompletedAt = recommendationRepository.findById(recommendation.getId())
+                .orElseThrow()
+                .getCompletedAt();
+
+        mockMvc.perform(post("/api/recommendations/{id}/complete", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completedAt").exists());
+
+        java.time.LocalDateTime secondCompletedAt = recommendationRepository.findById(recommendation.getId())
+                .orElseThrow()
+                .getCompletedAt();
+
+        assertThat(secondCompletedAt).isEqualTo(firstCompletedAt);
+    }
+
+    @Test
+    void cannotCompleteOtherUsersRecommendation() throws Exception {
+        User owner = saveUser("complete-real-owner@example.com");
+        User other = saveUser("complete-other@example.com");
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry checkin = saveCheckin(owner, emotion);
+        MicroActivity activity = saveActivity("Respirar", true);
+        ActivityRecommendation recommendation = saveRecommendation(owner, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/complete", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(other)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Recomendacion no encontrada"));
+
+        assertThat(recommendationRepository.findById(recommendation.getId()).orElseThrow().getCompletedAt())
+                .isNull();
+    }
+
     private User saveUser(String email) {
         User user = new User();
         user.setName("Usuario Recomendacion");
@@ -269,6 +324,20 @@ class RecommendationIntegrationTest {
         entry.setContext("Estudios");
         entry.setNote("Nota");
         return emotionalEntryRepository.save(entry);
+    }
+
+    private ActivityRecommendation saveRecommendation(
+            User user,
+            EmotionalEntry checkin,
+            MicroActivity activity
+    ) {
+        ActivityRecommendation recommendation = new ActivityRecommendation();
+        recommendation.setUser(user);
+        recommendation.setCheckin(checkin);
+        recommendation.setActivity(activity);
+        recommendation.setReason("Recomendacion de prueba");
+        recommendation.setFallbackUsed(false);
+        return recommendationRepository.save(recommendation);
     }
 
     private String bearer(User user) {
