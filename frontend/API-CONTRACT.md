@@ -462,3 +462,66 @@ Archivos principales:
 
 - Backend: `ActivityRecommendation`, `RecommendationService.complete`, `RecommendationController.complete`, `RecommendationIntegrationTest`.
 - Frontend: `ActivitiesComponent`, `ApiService.completeRecommendation`.
+
+## HU12 - Reporte emocional semanal
+
+### Consultar resumen semanal propio
+
+```http
+GET /api/reports/weekly?week=2026-W40
+Authorization: Bearer <token>
+```
+
+Reglas:
+
+- La semana usa formato ISO `YYYY-Www`.
+- La semana inicia el lunes y termina el domingo.
+- Solo se consideran check-ins del usuario autenticado.
+- Siempre devuelve 7 puntos, uno por dia.
+- Los dias sin registros devuelven `count: 0` y `averageIntensity: 0`.
+- No crea tablas de reporte; calcula sobre `checkins`.
+
+Respuesta `200 OK`:
+
+```json
+[
+  { "label": "lun", "count": 2, "averageIntensity": 3.5 },
+  { "label": "mar", "count": 0, "averageIntensity": 0 }
+]
+```
+
+## HU13 - Distribucion emocional
+
+### Consultar distribucion propia
+
+```http
+GET /api/reports/distribution?from=2026-09-01&to=2026-09-30
+Authorization: Bearer <token>
+```
+
+Reglas:
+
+- `from` y `to` son opcionales en formato `YYYY-MM-DD`.
+- Si ambos existen, `from` no puede ser posterior a `to`.
+- Solo se consideran check-ins del usuario autenticado.
+- Calcula distribucion por emocion y por contexto.
+- Los porcentajes se calculan sobre el total filtrado.
+- Si no hay datos, devuelve arreglos vacios.
+
+Respuesta `200 OK`:
+
+```json
+{
+  "emotions": [
+    { "label": "Ansiedad", "count": 2, "percentage": 66.7 }
+  ],
+  "contexts": [
+    { "label": "Estudios", "count": 2, "percentage": 66.7 }
+  ]
+}
+```
+
+Archivos principales:
+
+- Backend: `ReportController`, `ReportService`, DTO de reportes, `EmotionalEntryRepository.findReportEntries`, `ReportIntegrationTest`.
+- Frontend: `DashboardComponent`, `ApiService.weekly`, `ApiService.distribution`.

@@ -1,6 +1,7 @@
 package com.mentaiko.backend.repository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -75,4 +76,18 @@ public interface EmotionalEntryRepository
                         @Param("to") LocalDateTime to,
                         @Param("context") String context,
                         Pageable pageable);
+
+        @Query("""
+                        select entry
+                        from EmotionalEntry entry
+                        join fetch entry.emotion
+                        where entry.user = :user
+                          and entry.createdAt >= coalesce(:from, entry.createdAt)
+                          and entry.createdAt <= coalesce(:to, entry.createdAt)
+                        order by entry.createdAt asc, entry.id asc
+                        """)
+        List<EmotionalEntry> findReportEntries(
+                        @Param("user") User user,
+                        @Param("from") LocalDateTime from,
+                        @Param("to") LocalDateTime to);
 }
