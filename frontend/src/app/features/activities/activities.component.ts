@@ -1,10 +1,71 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { ApiService } from '../../core/services/api.service';
-import { MicroActivity, Recommendation } from '../../shared/models/models';
+import { MicroActivity } from '../../shared/models/models';
 
-@Component({selector:'app-activities',standalone:true,template:`
-<header class="page-head"><div><span class="eyebrow">PEQUEÑAS ACCIONES</span><h1>Microactividades</h1><p>Ideas breves y seguras para acompañar tu momento.</p></div></header>
-@if(error()){<div class="alert error">{{error()}}</div>}<section class="dashboard-grid"><article class="panel span-2"><span class="eyebrow">RECOMENDADAS PARA TI</span><h2>Tu seguimiento</h2><div class="activity-list">@for(r of recommendations();track r.id){<article class="activity-row"><span class="activity-time">{{r.activity.durationMinutes}}<small>min</small></span><div><h3>{{r.activity.title}}</h3><p>{{r.activity.description}}</p><small>{{r.reason}}</small></div>@if(r.completedAt){<span class="done">Completada</span>}@else{<button class="btn secondary" (click)="complete(r.id)">Marcar completa</button>}</article>}@empty{<div class="empty"><b>Aún no tienes recomendaciones</b><p>Registra un check-in para recibir una actividad relacionada con tu momento.</p></div>}</div></article>
-<article class="panel"><span class="eyebrow">CATÁLOGO ACTIVO</span><h2>Explora a tu ritmo</h2>@for(a of activities();track a.id){<div class="compact-activity"><span>{{a.durationMinutes}} min</span><b>{{a.title}}</b><p>{{a.description}}</p></div>}</article></section><div class="disclaimer">Estas actividades promueven bienestar general. No son diagnóstico, tratamiento ni atención de emergencia.</div>
-`})
-export class ActivitiesComponent implements OnInit{readonly recommendations=signal<Recommendation[]>([]);readonly activities=signal<MicroActivity[]>([]);readonly error=signal('');constructor(private readonly api:ApiService){}ngOnInit():void{this.load();this.api.activities().subscribe({next:x=>this.activities.set(x),error:()=>this.error.set('No se pudo cargar el catálogo.')});}load():void{this.api.recommendations().subscribe({next:x=>this.recommendations.set(x),error:()=>this.error.set('No se pudieron cargar tus recomendaciones.')});}complete(id:number):void{this.api.completeRecommendation(id).subscribe({next:()=>this.load(),error:()=>this.error.set('No se pudo completar la actividad.')});}}
+@Component({
+  selector: 'app-activities',
+  standalone: true,
+  template: `
+    <header class="page-head">
+      <div>
+        <span class="eyebrow">BIENESTAR COTIDIANO</span>
+        <h1>Microactividades</h1>
+        <p>Acciones breves e informativas que puedes explorar a tu propio ritmo.</p>
+      </div>
+      <button class="btn secondary" (click)="load()" [disabled]="loading()">Actualizar</button>
+    </header>
+
+    @if (error()) {
+      <div class="alert error">{{ error() }}</div>
+    }
+
+    @if (loading()) {
+      <div class="loading-panel">Cargando microactividades...</div>
+    } @else {
+      <section class="activity-catalog-grid" aria-label="Catalogo de microactividades activas">
+        @for (activity of activities(); track activity.id) {
+          <article class="panel activity-catalog-item">
+            <span class="activity-time">{{ activity.durationMinutes }}<small>min</small></span>
+            <div>
+              <h2>{{ activity.title }}</h2>
+              <p>{{ activity.description }}</p>
+            </div>
+          </article>
+        } @empty {
+          <div class="empty activity-empty">
+            <b>Aun no hay microactividades disponibles</b>
+            <p>El catalogo se mostrara aqui cuando se publiquen nuevas opciones.</p>
+          </div>
+        }
+      </section>
+    }
+
+    <p class="disclaimer">Estas actividades ofrecen informacion de bienestar general y no reemplazan atencion profesional.</p>
+  `
+})
+export class ActivitiesComponent implements OnInit {
+  readonly activities = signal<MicroActivity[]>([]);
+  readonly loading = signal(true);
+  readonly error = signal('');
+
+  constructor(private readonly api: ApiService) {}
+
+  ngOnInit(): void {
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.error.set('');
+    this.api.activities(true).subscribe({
+      next: activities => {
+        this.activities.set(activities);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.loading.set(false);
+        this.error.set('No se pudo cargar el catalogo de microactividades.');
+      }
+    });
+  }
+}

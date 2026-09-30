@@ -36,6 +36,14 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, exception.getMessage(), request, null);
     }
 
+    @ExceptionHandler(DuplicateMicroActivityTitleException.class)
+    public ResponseEntity<ApiError> handleDuplicateMicroActivity(
+            DuplicateMicroActivityTitleException exception,
+            WebRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, exception.getMessage(), request, null);
+    }
+
     @ExceptionHandler(UserInactiveException.class)
     public ResponseEntity<ApiError> handleInactiveUser(UserInactiveException exception, WebRequest request) {
         return build(HttpStatus.FORBIDDEN, exception.getMessage(), request, null);
