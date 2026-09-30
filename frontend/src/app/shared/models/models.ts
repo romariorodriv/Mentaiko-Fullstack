@@ -13,6 +13,6 @@ export interface UpdateMicroActivityRequest { title?: string; description?: stri
 export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; }
 export interface WeeklyPoint { label: string; count: number; averageIntensity: number; }
 export interface DistributionItem { label: string; count: number; percentage: number; }
-export interface AdminIndicators { activeUsers: number; totalCheckins: number; completionRate: number; mostFrequentEmotion: string; }
+export interface AdminIndicators { totalUsers: number; activeUsers: number; totalCheckins: number; emotionDistribution: DistributionItem[]; recommendationsGenerated: number; recommendationsCompleted: number; completionRate: number; mostFrequentEmotion: string; }
 export interface PageResponse<T> { content: T[]; totalElements: number; totalPages: number; number: number; size: number; }
 export interface ApiError { status?: number; message?: string; errors?: Record<string,string>; }

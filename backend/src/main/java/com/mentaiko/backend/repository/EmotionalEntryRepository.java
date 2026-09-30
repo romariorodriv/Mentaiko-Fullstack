@@ -90,4 +90,12 @@ public interface EmotionalEntryRepository
                         @Param("user") User user,
                         @Param("from") LocalDateTime from,
                         @Param("to") LocalDateTime to);
+
+        @Query("""
+                        select entry
+                        from EmotionalEntry entry
+                        join fetch entry.emotion
+                        order by entry.createdAt asc, entry.id asc
+                        """)
+        List<EmotionalEntry> findAllWithEmotion();
 }

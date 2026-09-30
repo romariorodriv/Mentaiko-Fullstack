@@ -23,6 +23,7 @@ import com.mentaiko.backend.entity.EmotionalEntry;
 import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.repository.EmotionRepository;
 import com.mentaiko.backend.repository.EmotionalEntryRepository;
+import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.UserRepository;
 
 @Service
@@ -34,14 +35,17 @@ public class CheckinService {
     private final EmotionalEntryRepository emotionalEntryRepository;
     private final EmotionRepository emotionRepository;
     private final UserRepository userRepository;
+    private final ActivityRecommendationRepository recommendationRepository;
 
     public CheckinService(
             EmotionalEntryRepository emotionalEntryRepository,
             EmotionRepository emotionRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            ActivityRecommendationRepository recommendationRepository) {
         this.emotionalEntryRepository = emotionalEntryRepository;
         this.emotionRepository = emotionRepository;
         this.userRepository = userRepository;
+        this.recommendationRepository = recommendationRepository;
     }
 
     @Transactional
@@ -80,6 +84,7 @@ public class CheckinService {
         EmotionalEntry entry = emotionalEntryRepository.findByIdAndUserWithEmotion(id, user)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in no encontrado"));
 
+        recommendationRepository.deleteByCheckin(entry);
         emotionalEntryRepository.delete(entry);
     }
 

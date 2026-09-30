@@ -15,6 +15,10 @@ public interface ActivityRecommendationRepository extends JpaRepository<Activity
 
     Optional<ActivityRecommendation> findByCheckin(EmotionalEntry checkin);
 
+    void deleteByCheckin(EmotionalEntry checkin);
+
+    long countByCompletedTrue();
+
     @Query("""
             select recommendation
             from ActivityRecommendation recommendation

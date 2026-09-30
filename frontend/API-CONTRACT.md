@@ -525,3 +525,42 @@ Archivos principales:
 
 - Backend: `ReportController`, `ReportService`, DTO de reportes, `EmotionalEntryRepository.findReportEntries`, `ReportIntegrationTest`.
 - Frontend: `DashboardComponent`, `ApiService.weekly`, `ApiService.distribution`.
+
+## HU14 - Indicadores emocionales administrativos
+
+### Consultar indicadores anonimizados
+
+```http
+GET /api/admin/indicators
+Authorization: Bearer <token-admin>
+```
+
+Reglas:
+
+- Requiere rol `ADMIN`.
+- Un usuario `USER` recibe `403`.
+- La respuesta no incluye nombres, correos, IDs personales ni notas privadas.
+- Maneja base vacia con conteos `0`, arreglos vacios y `completionRate: 0`.
+- La distribucion emocional es agregada global.
+
+Respuesta `200 OK`:
+
+```json
+{
+  "totalUsers": 20,
+  "activeUsers": 18,
+  "totalCheckins": 120,
+  "emotionDistribution": [
+    { "label": "Ansiedad", "count": 50, "percentage": 41.7 }
+  ],
+  "recommendationsGenerated": 80,
+  "recommendationsCompleted": 40,
+  "completionRate": 50.0,
+  "mostFrequentEmotion": "Ansiedad"
+}
+```
+
+Archivos principales:
+
+- Backend: `AdminIndicatorsController`, `AdminIndicatorsService`, `AdminIndicatorsResponse`, `AdminIndicatorsIntegrationTest`.
+- Frontend: `AdminIndicatorsComponent`, `ApiService.indicators`, `AdminIndicators`.
