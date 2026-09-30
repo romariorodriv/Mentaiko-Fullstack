@@ -356,3 +356,66 @@ Archivos principales:
 
 - Backend: `MicroActivity`, `MicroActivityRepository`, DTO de microactividades, `MicroActivityService`, `MicroActivityController`, `MicroActivityIntegrationTest`.
 - Frontend: `ActivitiesComponent`, `AdminActivitiesComponent`, `ApiService.activities`, `ApiService.createActivity`, `ApiService.updateActivity`.
+
+## HU10 - Recibir una recomendacion de bienestar
+
+### Generar u obtener recomendacion para un check-in
+
+```http
+POST /api/recommendations
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "checkinId": 15
+}
+```
+
+Reglas:
+
+- `checkinId` es obligatorio.
+- El check-in debe pertenecer al usuario autenticado.
+- Un check-in inexistente o ajeno responde `404` con `Check-in no encontrado`.
+- La recomendacion se persiste en `activity_recommendations`.
+- La seleccion usa la primera regla activa de `emotion_activity_rules` para la emocion del check-in, ordenada por prioridad y titulo.
+- Si no existe regla activa, se usa como fallback la primera microactividad activa ordenada por titulo.
+- Nunca se recomienda una microactividad inactiva.
+- Si ya existe recomendacion para el mismo check-in, se devuelve la existente para evitar duplicados.
+
+Respuesta `201 Created`:
+
+```json
+{
+  "id": 1,
+  "checkinId": 15,
+  "activity": {
+    "id": 3,
+    "title": "Respiracion guiada",
+    "description": "Inhala y exhala con calma",
+    "durationMinutes": 5,
+    "active": true,
+    "createdAt": "2026-09-30T14:00:00",
+    "updatedAt": "2026-09-30T14:00:00"
+  },
+  "reason": "Recomendacion asociada a la emocion Ansiedad.",
+  "fallbackUsed": false,
+  "createdAt": "2026-09-30T14:05:00",
+  "completedAt": null
+}
+```
+
+### Listar recomendaciones propias
+
+```http
+GET /api/recommendations/me
+Authorization: Bearer <token>
+```
+
+Devuelve solo recomendaciones del usuario autenticado, ordenadas de mas reciente a mas antigua.
+
+Archivos principales:
+
+- Backend: `EmotionActivityRule`, `ActivityRecommendation`, repositorios de reglas y recomendaciones, `RecommendationService`, `RecommendationController`, `RecommendationIntegrationTest`.
+- Frontend: `CheckinsComponent`, `ActivitiesComponent`, `ApiService.recommend`, `ApiService.recommendations`.
