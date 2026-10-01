@@ -31,6 +31,7 @@ import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.enums.Role;
 import com.mentaiko.backend.repository.EmotionRepository;
 import com.mentaiko.backend.repository.EmotionalEntryRepository;
+import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.UserRepository;
 import com.mentaiko.backend.security.JwtService;
 import com.mentaiko.backend.service.EmotionService;
@@ -44,6 +45,9 @@ class CheckinIntegrationTest {
 
     @Autowired
     private EmotionalEntryRepository emotionalEntryRepository;
+
+    @Autowired
+    private ActivityRecommendationRepository recommendationRepository;
 
     @Autowired
     private EmotionRepository emotionRepository;
@@ -62,6 +66,7 @@ class CheckinIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        recommendationRepository.deleteAll();
         emotionalEntryRepository.deleteAll();
         emotionRepository.deleteAll();
         userRepository.deleteAll();

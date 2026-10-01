@@ -7,10 +7,12 @@ export interface Emotion { id: number; name: string; active: boolean; createdAt:
 export interface CheckinEmotion { id: number; name: string; }
 export interface Checkin { id: number; emotion: CheckinEmotion; intensity: number; context: string; note?: string; createdAt: string; }
 export interface CheckinRequest { emotionId: number; intensity: number; context: string; note?: string; }
-export interface MicroActivity { id: number; title: string; description: string; durationMinutes: number; active: boolean; }
+export interface MicroActivity { id: number; title: string; description: string; durationMinutes: number; active: boolean; createdAt: string; updatedAt: string; }
+export interface CreateMicroActivityRequest { title: string; description: string; durationMinutes: number; }
+export interface UpdateMicroActivityRequest { title?: string; description?: string; durationMinutes?: number; active?: boolean; }
 export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; }
 export interface WeeklyPoint { label: string; count: number; averageIntensity: number; }
 export interface DistributionItem { label: string; count: number; percentage: number; }
-export interface AdminIndicators { activeUsers: number; totalCheckins: number; completionRate: number; mostFrequentEmotion: string; }
+export interface AdminIndicators { totalUsers: number; activeUsers: number; totalCheckins: number; emotionDistribution: DistributionItem[]; recommendationsGenerated: number; recommendationsCompleted: number; completionRate: number; mostFrequentEmotion: string; }
 export interface PageResponse<T> { content: T[]; totalElements: number; totalPages: number; number: number; size: number; }
 export interface ApiError { status?: number; message?: string; errors?: Record<string,string>; }

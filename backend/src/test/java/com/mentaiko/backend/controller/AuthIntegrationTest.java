@@ -27,6 +27,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.enums.Role;
 import com.mentaiko.backend.repository.EmotionalEntryRepository;
+import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.UserRepository;
 import com.mentaiko.backend.security.JwtService;
 
@@ -44,6 +45,9 @@ class AuthIntegrationTest {
     private EmotionalEntryRepository emotionalEntryRepository;
 
     @Autowired
+    private ActivityRecommendationRepository recommendationRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -51,6 +55,7 @@ class AuthIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        recommendationRepository.deleteAll();
         emotionalEntryRepository.deleteAll();
         userRepository.deleteAll();
     }

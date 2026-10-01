@@ -14,7 +14,7 @@ import { ApiError, Checkin, Emotion } from '../../shared/models/models';
 <section class="panel filters" [formGroup]="filtersForm"><label>Desde<input type="date" formControlName="from"></label><label>Hasta<input type="date" formControlName="to"></label><label>Contexto<input formControlName="context" placeholder="Ej. Estudios" maxlength="100"></label><button class="btn secondary" type="button" (click)="applyFilters()" [disabled]="historyLoading()">Filtrar</button><button class="btn secondary" type="button" (click)="clearFilters()" [disabled]="historyLoading()||!hasFilters()">Limpiar</button></section>
 @if(historyLoading()){<div class="loading-panel">Cargando historial...</div>} @else {
   <section class="timeline">
-    @for(item of items();track item.id){<article class="checkin-card"><div class="emotion-dot" [style.--intensity]="item.intensity"></div><div class="checkin-main"><div><span class="emotion-name">{{item.emotion.name}}</span><span class="context-tag">{{item.context}}</span></div><p>{{item.note||'Sin nota personal'}}</p><small>{{item.createdAt|date:'d MMM y, h:mm a'}}</small></div><div class="intensity"><strong>{{item.intensity}}</strong><small>de 5</small></div><div class="row-actions"><button type="button" (click)="openEdit(item)" [disabled]="emotionsLoading()||deleting()" [attr.aria-label]="'Editar check-in de '+item.emotion.name">Editar</button><button class="danger-text" type="button" (click)="openDeleteConfirmation(item)" [disabled]="deleting()" [attr.aria-label]="'Eliminar check-in de '+item.emotion.name">Eliminar</button></div></article>}
+    @for(item of items();track item.id){<article class="checkin-card"><div class="emotion-dot" [style.--intensity]="item.intensity"></div><div class="checkin-main"><div><span class="emotion-name">{{item.emotion.name}}</span><span class="context-tag">{{item.context}}</span></div><p>{{item.note||'Sin nota personal'}}</p><small>{{item.createdAt|date:'d MMM y, h:mm a'}}</small></div><div class="intensity"><strong>{{item.intensity}}</strong><small>de 5</small></div><div class="row-actions"><button type="button" (click)="recommend(item)" [disabled]="recommendationBusyId()===item.id||deleting()" [attr.aria-label]="'Generar recomendacion para '+item.emotion.name">{{recommendationBusyId()===item.id?'Generando...':'Recomendar'}}</button><button type="button" (click)="openEdit(item)" [disabled]="emotionsLoading()||deleting()||recommendationBusyId()!==null" [attr.aria-label]="'Editar check-in de '+item.emotion.name">Editar</button><button class="danger-text" type="button" (click)="openDeleteConfirmation(item)" [disabled]="deleting()||recommendationBusyId()!==null" [attr.aria-label]="'Eliminar check-in de '+item.emotion.name">Eliminar</button></div></article>}
     @empty {<div class="empty"><b>{{hasFilters()?'No hay resultados':'Aun no tienes check-ins'}}</b><p>{{hasFilters()?'Prueba con otro rango de fechas o contexto.':'Crea tu primer registro emocional cuando quieras.'}}</p></div>}
   </section>
   @if(totalElements()>0){<div class="pagination"><button class="btn secondary" type="button" (click)="previousPage()" [disabled]="page()===0||historyLoading()">Anterior</button><span>Pagina {{page()+1}} de {{totalPages()}}</span><button class="btn secondary" type="button" (click)="nextPage()" [disabled]="page()+1>=totalPages()||historyLoading()">Siguiente</button></div>}
@@ -42,6 +42,7 @@ export class CheckinsComponent implements OnInit {
   readonly totalElements = signal(0);
   readonly totalPages = signal(0);
   readonly editingId = signal<number | null>(null);
+  readonly recommendationBusyId = signal<number | null>(null);
   readonly deleteTarget = signal<Checkin | null>(null);
   readonly deleting = signal(false);
   readonly deleteError = signal('');
@@ -207,6 +208,25 @@ export class CheckinsComponent implements OnInit {
       error: error => {
         this.saving.set(false);
         this.formError.set(this.errorMessage(error, editingId === null ? 'No se pudo crear el check-in. Revisa los datos e intenta nuevamente.' : 'No se pudo actualizar el check-in. Revisa los datos e intenta nuevamente.'));
+      }
+    });
+  }
+
+  recommend(item: Checkin): void {
+    if (this.recommendationBusyId() !== null) {
+      return;
+    }
+
+    this.recommendationBusyId.set(item.id);
+    this.clearMessages();
+    this.api.recommend(item.id).subscribe({
+      next: recommendation => {
+        this.recommendationBusyId.set(null);
+        this.success.set(`Recomendacion creada: ${recommendation.activity.title}`);
+      },
+      error: error => {
+        this.recommendationBusyId.set(null);
+        this.error.set(this.errorMessage(error, 'No se pudo generar la recomendacion.'));
       }
     });
   }

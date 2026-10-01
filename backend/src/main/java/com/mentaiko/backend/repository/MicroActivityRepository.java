@@ -1,6 +1,7 @@
 package com.mentaiko.backend.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -15,4 +16,6 @@ public interface MicroActivityRepository extends JpaRepository<MicroActivity, Lo
     List<MicroActivity> findByActiveTrueOrderByTitleAscIdAsc();
 
     List<MicroActivity> findAllByOrderByTitleAscIdAsc();
+
+    Optional<MicroActivity> findFirstByActiveTrueOrderByTitleAscIdAsc();
 }

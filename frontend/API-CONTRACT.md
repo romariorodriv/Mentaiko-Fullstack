@@ -356,3 +356,211 @@ Archivos principales:
 
 - Backend: `MicroActivity`, `MicroActivityRepository`, DTO de microactividades, `MicroActivityService`, `MicroActivityController`, `MicroActivityIntegrationTest`.
 - Frontend: `ActivitiesComponent`, `AdminActivitiesComponent`, `ApiService.activities`, `ApiService.createActivity`, `ApiService.updateActivity`.
+
+## HU10 - Recibir una recomendacion de bienestar
+
+### Generar u obtener recomendacion para un check-in
+
+```http
+POST /api/recommendations
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "checkinId": 15
+}
+```
+
+Reglas:
+
+- `checkinId` es obligatorio.
+- El check-in debe pertenecer al usuario autenticado.
+- Un check-in inexistente o ajeno responde `404` con `Check-in no encontrado`.
+- La recomendacion se persiste en `activity_recommendations`.
+- La seleccion usa la primera regla activa de `emotion_activity_rules` para la emocion del check-in, ordenada por prioridad y titulo.
+- Si no existe regla activa, se usa como fallback la primera microactividad activa ordenada por titulo.
+- Nunca se recomienda una microactividad inactiva.
+- Si ya existe recomendacion para el mismo check-in, se devuelve la existente para evitar duplicados.
+
+Respuesta `201 Created`:
+
+```json
+{
+  "id": 1,
+  "checkinId": 15,
+  "activity": {
+    "id": 3,
+    "title": "Respiracion guiada",
+    "description": "Inhala y exhala con calma",
+    "durationMinutes": 5,
+    "active": true,
+    "createdAt": "2026-09-30T14:00:00",
+    "updatedAt": "2026-09-30T14:00:00"
+  },
+  "reason": "Recomendacion asociada a la emocion Ansiedad.",
+  "fallbackUsed": false,
+  "createdAt": "2026-09-30T14:05:00",
+  "completedAt": null
+}
+```
+
+### Listar recomendaciones propias
+
+```http
+GET /api/recommendations/me
+Authorization: Bearer <token>
+```
+
+Devuelve solo recomendaciones del usuario autenticado, ordenadas de mas reciente a mas antigua.
+
+Archivos principales:
+
+- Backend: `EmotionActivityRule`, `ActivityRecommendation`, repositorios de reglas y recomendaciones, `RecommendationService`, `RecommendationController`, `RecommendationIntegrationTest`.
+- Frontend: `CheckinsComponent`, `ActivitiesComponent`, `ApiService.recommend`, `ApiService.recommendations`.
+
+## HU11 - Completar una recomendacion
+
+### Marcar recomendacion propia como completada
+
+```http
+POST /api/recommendations/{id}/complete
+Authorization: Bearer <token>
+```
+
+Reglas:
+
+- Solo se puede completar una recomendacion propia.
+- Una recomendacion inexistente o ajena responde `404` con `Recomendacion no encontrada`.
+- La operacion es idempotente: si ya estaba completada, devuelve la misma recomendacion sin cambiar `completedAt`.
+- No requiere body.
+
+Respuesta `200 OK`:
+
+```json
+{
+  "id": 1,
+  "checkinId": 15,
+  "activity": {
+    "id": 3,
+    "title": "Respiracion guiada",
+    "description": "Inhala y exhala con calma",
+    "durationMinutes": 5,
+    "active": true,
+    "createdAt": "2026-09-30T14:00:00",
+    "updatedAt": "2026-09-30T14:00:00"
+  },
+  "reason": "Recomendacion asociada a la emocion Ansiedad.",
+  "fallbackUsed": false,
+  "createdAt": "2026-09-30T14:05:00",
+  "completedAt": "2026-09-30T14:15:00"
+}
+```
+
+Archivos principales:
+
+- Backend: `ActivityRecommendation`, `RecommendationService.complete`, `RecommendationController.complete`, `RecommendationIntegrationTest`.
+- Frontend: `ActivitiesComponent`, `ApiService.completeRecommendation`.
+
+## HU12 - Reporte emocional semanal
+
+### Consultar resumen semanal propio
+
+```http
+GET /api/reports/weekly?week=2026-W40
+Authorization: Bearer <token>
+```
+
+Reglas:
+
+- La semana usa formato ISO `YYYY-Www`.
+- La semana inicia el lunes y termina el domingo.
+- Solo se consideran check-ins del usuario autenticado.
+- Siempre devuelve 7 puntos, uno por dia.
+- Los dias sin registros devuelven `count: 0` y `averageIntensity: 0`.
+- No crea tablas de reporte; calcula sobre `checkins`.
+
+Respuesta `200 OK`:
+
+```json
+[
+  { "label": "lun", "count": 2, "averageIntensity": 3.5 },
+  { "label": "mar", "count": 0, "averageIntensity": 0 }
+]
+```
+
+## HU13 - Distribucion emocional
+
+### Consultar distribucion propia
+
+```http
+GET /api/reports/distribution?from=2026-09-01&to=2026-09-30
+Authorization: Bearer <token>
+```
+
+Reglas:
+
+- `from` y `to` son opcionales en formato `YYYY-MM-DD`.
+- Si ambos existen, `from` no puede ser posterior a `to`.
+- Solo se consideran check-ins del usuario autenticado.
+- Calcula distribucion por emocion y por contexto.
+- Los porcentajes se calculan sobre el total filtrado.
+- Si no hay datos, devuelve arreglos vacios.
+
+Respuesta `200 OK`:
+
+```json
+{
+  "emotions": [
+    { "label": "Ansiedad", "count": 2, "percentage": 66.7 }
+  ],
+  "contexts": [
+    { "label": "Estudios", "count": 2, "percentage": 66.7 }
+  ]
+}
+```
+
+Archivos principales:
+
+- Backend: `ReportController`, `ReportService`, DTO de reportes, `EmotionalEntryRepository.findReportEntries`, `ReportIntegrationTest`.
+- Frontend: `DashboardComponent`, `ApiService.weekly`, `ApiService.distribution`.
+
+## HU14 - Indicadores emocionales administrativos
+
+### Consultar indicadores anonimizados
+
+```http
+GET /api/admin/indicators
+Authorization: Bearer <token-admin>
+```
+
+Reglas:
+
+- Requiere rol `ADMIN`.
+- Un usuario `USER` recibe `403`.
+- La respuesta no incluye nombres, correos, IDs personales ni notas privadas.
+- Maneja base vacia con conteos `0`, arreglos vacios y `completionRate: 0`.
+- La distribucion emocional es agregada global.
+
+Respuesta `200 OK`:
+
+```json
+{
+  "totalUsers": 20,
+  "activeUsers": 18,
+  "totalCheckins": 120,
+  "emotionDistribution": [
+    { "label": "Ansiedad", "count": 50, "percentage": 41.7 }
+  ],
+  "recommendationsGenerated": 80,
+  "recommendationsCompleted": 40,
+  "completionRate": 50.0,
+  "mostFrequentEmotion": "Ansiedad"
+}
+```
+
+Archivos principales:
+
+- Backend: `AdminIndicatorsController`, `AdminIndicatorsService`, `AdminIndicatorsResponse`, `AdminIndicatorsIntegrationTest`.
+- Frontend: `AdminIndicatorsComponent`, `ApiService.indicators`, `AdminIndicators`.

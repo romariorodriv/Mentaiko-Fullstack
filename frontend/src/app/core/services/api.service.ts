@@ -21,10 +21,10 @@ export class ApiService {
   updateCheckin(id: number, body: CheckinRequest): Observable<Checkin> { return this.http.put<Checkin>(`${this.base}/checkins/${id}`, body); }
   deleteCheckin(id: number): Observable<void> { return this.http.delete<void>(`${this.base}/checkins/${id}`); }
 
-  activities(activeOnly = true): Observable<MicroActivity[]> { return this.http.get<MicroActivity[]>(`${this.base}/micro-activities`, { params: { activeOnly } }); }
+  activities(activeOnly = true): Observable<MicroActivity[]> { return this.http.get<MicroActivity[]>(`${this.base}/micro-activities`, {params: {activeOnly}}); }
   createActivity(body: CreateMicroActivityRequest): Observable<MicroActivity> { return this.http.post<MicroActivity>(`${this.base}/admin/micro-activities`, body); }
   updateActivity(id: number, body: UpdateMicroActivityRequest): Observable<MicroActivity> { return this.http.put<MicroActivity>(`${this.base}/admin/micro-activities/${id}`, body); }
-  recommend(checkinId: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations`, { checkinId }); }
+  recommend(checkinId: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations`, {checkinId}); }
   recommendations(): Observable<Recommendation[]> { return this.http.get<Recommendation[]>(`${this.base}/recommendations/me`); }
   completeRecommendation(id: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/complete`, {}); }
 
