@@ -14,5 +14,8 @@ export interface Recommendation { id: number; checkinId: number; activity: Micro
 export interface WeeklyPoint { label: string; count: number; averageIntensity: number; }
 export interface DistributionItem { label: string; count: number; percentage: number; }
 export interface AdminIndicators { totalUsers: number; activeUsers: number; totalCheckins: number; emotionDistribution: DistributionItem[]; recommendationsGenerated: number; recommendationsCompleted: number; completionRate: number; mostFrequentEmotion: string; }
+export interface AdminDashboard { totalUsers: number; activeUsers: number; totalAdmins: number; totalCheckins: number; totalEmotions: number; totalMicroActivities: number; totalRecommendations: number; completedRecommendations: number; }
+export interface AdminUser { id: number; name: string; email: string; birthDate: string; university: string; career: string; role: Role; active: boolean; createdAt: string; }
+export interface AdminCheckin { id: number; user: { id: number; name: string; email: string }; emotion: CheckinEmotion; intensity: number; context: string; createdAt: string; }
 export interface PageResponse<T> { content: T[]; totalElements: number; totalPages: number; number: number; size: number; }
 export interface ApiError { status?: number; message?: string; errors?: Record<string,string>; }

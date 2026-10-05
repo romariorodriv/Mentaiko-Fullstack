@@ -16,6 +16,7 @@ import { AuthService } from '../../core/auth/auth.service';
         <a routerLink="/app/perfil" routerLinkActive="active" (click)="menuOpen.set(false)"><span>○</span> Mi perfil</a>
         @if (auth.role() === 'ADMIN') {
           <p class="nav-caption">ADMINISTRACIÓN</p>
+          <a routerLink="/app/admin/dashboard" routerLinkActive="active"><span>▣</span> Dashboard</a>
           <a routerLink="/app/admin/emociones" routerLinkActive="active"><span>◇</span> Emociones</a>
           <a routerLink="/app/admin/actividades" routerLinkActive="active"><span>▦</span> Actividades</a>
           <a routerLink="/app/admin/indicadores" routerLinkActive="active"><span>⌁</span> Indicadores</a>

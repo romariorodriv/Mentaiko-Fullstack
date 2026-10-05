@@ -12,6 +12,7 @@ export const routes: Routes = [
     {path: 'checkins', loadComponent: () => import('./features/checkins/checkins.component').then(m => m.CheckinsComponent)},
     {path: 'actividades', loadComponent: () => import('./features/activities/activities.component').then(m => m.ActivitiesComponent)},
     {path: 'perfil', loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)},
+    {path: 'admin/dashboard', canActivate: [adminGuard], loadComponent: () => import('./features/admin/dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)},
     {path: 'admin/emociones', canActivate: [adminGuard], loadComponent: () => import('./features/admin/emotions/admin-emotions.component').then(m => m.AdminEmotionsComponent)},
     {path: 'admin/actividades', canActivate: [adminGuard], loadComponent: () => import('./features/admin/activities/admin-activities.component').then(m => m.AdminActivitiesComponent)},
     {path: 'admin/indicadores', canActivate: [adminGuard], loadComponent: () => import('./features/admin/indicators/admin-indicators.component').then(m => m.AdminIndicatorsComponent)},

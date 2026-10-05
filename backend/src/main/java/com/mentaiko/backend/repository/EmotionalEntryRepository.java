@@ -98,4 +98,15 @@ public interface EmotionalEntryRepository
                         order by entry.createdAt asc, entry.id asc
                         """)
         List<EmotionalEntry> findAllWithEmotion();
+
+        @Query(value = """
+                        select entry
+                        from EmotionalEntry entry
+                        join fetch entry.user
+                        join fetch entry.emotion
+                        """, countQuery = """
+                        select count(entry)
+                        from EmotionalEntry entry
+                        """)
+        Page<EmotionalEntry> findAllForAdmin(Pageable pageable);
 }
