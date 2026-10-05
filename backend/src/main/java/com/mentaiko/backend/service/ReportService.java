@@ -15,6 +15,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,8 @@ import com.mentaiko.backend.repository.UserRepository;
 
 @Service
 public class ReportService {
+
+    private static final Logger log = LoggerFactory.getLogger(ReportService.class);
 
     private static final Pattern WEEK_PATTERN = Pattern.compile("^(\\d{4})-W(\\d{2})$");
     private static final WeekFields ISO_WEEK = WeekFields.ISO;
@@ -52,6 +56,8 @@ public class ReportService {
                 start.atStartOfDay(),
                 start.plusDays(6).atTime(LocalTime.MAX)
         );
+        log.debug("Weekly report entries loaded for user id={} week={} count={}",
+                user.getId(), week, entries.size());
 
         List<WeeklyPointResponse> result = new ArrayList<>();
         for (int i = 0; i < 7; i++) {
@@ -64,12 +70,14 @@ public class ReportService {
                     : dayEntries.stream().mapToInt(EmotionalEntry::getIntensity).average().orElse(0);
             result.add(new WeeklyPointResponse(labelFor(day.getDayOfWeek()), dayEntries.size(), roundOne(average)));
         }
+        log.info("Weekly report generated for user id={} week={}", user.getId(), week);
         return result;
     }
 
     @Transactional(readOnly = true)
     public DistributionResponse distribution(String userEmail, LocalDate from, LocalDate to) {
         if (from != null && to != null && from.isAfter(to)) {
+            log.warn("Distribution report rejected because date range is invalid");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "La fecha inicial no puede ser posterior a la fecha final");
         }
@@ -78,6 +86,8 @@ public class ReportService {
         LocalDateTime fromDateTime = from == null ? null : from.atStartOfDay();
         LocalDateTime toDateTime = to == null ? null : to.atTime(LocalTime.MAX);
         List<EmotionalEntry> entries = emotionalEntryRepository.findReportEntries(user, fromDateTime, toDateTime);
+        log.info("Distribution report generated for user id={} from={} to={} entries={}",
+                user.getId(), from, to, entries.size());
 
         return new DistributionResponse(
                 distributionFor(entries, entry -> entry.getEmotion().getName()),
@@ -88,12 +98,14 @@ public class ReportService {
     private LocalDate startOfWeek(String value) {
         Matcher matcher = WEEK_PATTERN.matcher(value == null ? "" : value);
         if (!matcher.matches()) {
+            log.warn("Weekly report rejected because week format is invalid");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La semana debe tener formato YYYY-Www");
         }
 
         int year = Integer.parseInt(matcher.group(1));
         int week = Integer.parseInt(matcher.group(2));
         if (week < 1 || week > 53) {
+            log.warn("Weekly report rejected because week number={} is outside allowed range", week);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La semana debe estar entre 01 y 53");
         }
 
@@ -139,8 +151,12 @@ public class ReportService {
 
     private User findActiveUser(String email) {
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Report operation rejected because authenticated user was not found");
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado");
+                });
         if (!user.isActive()) {
+            log.warn("Report operation rejected because user id={} is inactive", user.getId());
             throw new UserInactiveException("El usuario esta desactivado");
         }
         return user;

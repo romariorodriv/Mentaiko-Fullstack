@@ -4,6 +4,8 @@ import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,8 @@ import com.mentaiko.backend.repository.EmotionRepository;
 @Service
 public class EmotionService {
 
+    private static final Logger log = LoggerFactory.getLogger(EmotionService.class);
+
     private final EmotionRepository emotionRepository;
 
     public EmotionService(EmotionRepository emotionRepository) {
@@ -30,6 +34,7 @@ public class EmotionService {
         List<Emotion> emotions = activeOnly
                 ? emotionRepository.findByActiveTrueOrderByNameAscIdAsc()
                 : emotionRepository.findAllByOrderByNameAscIdAsc();
+        log.debug("Emotion catalog loaded with activeOnly={} and count={}", activeOnly, emotions.size());
         return emotions.stream().map(this::toResponse).toList();
     }
 
@@ -40,6 +45,7 @@ public class EmotionService {
 
         String normalizedName = normalizeForUniqueness(name);
         if (emotionRepository.existsByNormalizedName(normalizedName)) {
+            log.warn("Emotion creation rejected because normalized name already exists");
             throw new DuplicateEmotionNameException("Ya existe una emocion con ese nombre");
         }
 
@@ -48,17 +54,23 @@ public class EmotionService {
         emotion.setNormalizedName(normalizedName);
         emotion.setActive(true);
 
-        return toResponse(emotionRepository.save(emotion));
+        Emotion savedEmotion = emotionRepository.save(emotion);
+        log.info("Emotion created with id={} active={}", savedEmotion.getId(), savedEmotion.isActive());
+        return toResponse(savedEmotion);
     }
 
     @Transactional
     public EmotionResponse update(Long id, UpdateEmotionRequest request) {
         if (request.name() == null && request.active() == null) {
+            log.warn("Emotion update rejected for id={} because request had no modifiable fields", id);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debes enviar nombre o estado");
         }
 
         Emotion emotion = emotionRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Emocion no encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Emotion update rejected because id={} was not found", id);
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Emocion no encontrada");
+                });
 
         if (request.name() != null) {
             String name = normalizeSpaces(request.name());
@@ -66,6 +78,7 @@ public class EmotionService {
             String normalizedName = normalizeForUniqueness(name);
 
             if (emotionRepository.existsByNormalizedNameAndIdNot(normalizedName, id)) {
+                log.warn("Emotion update rejected for id={} because normalized name already exists", id);
                 throw new DuplicateEmotionNameException("Ya existe una emocion con ese nombre");
             }
 
@@ -77,6 +90,7 @@ public class EmotionService {
             emotion.setActive(request.active());
         }
 
+        log.info("Emotion id={} updated active={}", emotion.getId(), emotion.isActive());
         return toResponse(emotion);
     }
 
@@ -91,9 +105,11 @@ public class EmotionService {
 
     private void validateName(String name) {
         if (name.isBlank()) {
+            log.warn("Emotion validation rejected blank name");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre de la emocion es obligatorio");
         }
         if (name.length() < 2 || name.length() > 80) {
+            log.warn("Emotion validation rejected name length={}", name.length());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El nombre debe tener entre 2 y 80 caracteres");
         }
     }

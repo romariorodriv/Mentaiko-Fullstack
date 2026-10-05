@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,8 @@ import com.mentaiko.backend.repository.UserRepository;
 
 @Service
 public class AdminIndicatorsService {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminIndicatorsService.class);
 
     private final UserRepository userRepository;
     private final EmotionalEntryRepository emotionalEntryRepository;
@@ -40,6 +44,13 @@ public class AdminIndicatorsService {
         long recommendationsGenerated = recommendationRepository.count();
         long recommendationsCompleted = recommendationRepository.countByCompletedTrue();
         List<DistributionItemResponse> distribution = emotionDistribution(checkins);
+        log.info("Admin indicators generated totalUsers={} activeUsers={} totalCheckins={} recommendationsGenerated={} recommendationsCompleted={}",
+                totalUsers,
+                activeUsers,
+                checkins.size(),
+                recommendationsGenerated,
+                recommendationsCompleted);
+        log.debug("Admin indicators emotion distribution count={}", distribution.size());
 
         return new AdminIndicatorsResponse(
                 totalUsers,

@@ -1,6 +1,8 @@
 package com.mentaiko.backend.service;
 
 import org.springframework.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,8 @@ import com.mentaiko.backend.security.JwtService;
 @Service
 public class UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -40,6 +44,7 @@ public class UserService {
         String normalizedEmail = request.email().trim().toLowerCase();
 
         if (userRepository.existsByEmailIgnoreCase(normalizedEmail)) {
+            log.warn("Registration rejected because email is already registered");
             throw new DuplicateEmailException("El correo ya esta registrado");
         }
 
@@ -53,7 +58,9 @@ public class UserService {
         user.setRole(Role.USER);
         user.setActive(true);
 
-        return toResponse(userRepository.save(user));
+        User savedUser = userRepository.save(user);
+        log.info("User registered successfully with id={} and role={}", savedUser.getId(), savedUser.getRole());
+        return toResponse(savedUser);
     }
 
     @Transactional(readOnly = true)
@@ -62,28 +69,36 @@ public class UserService {
 
         User user = userRepository
                 .findByEmailIgnoreCase(normalizedEmail)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED,
-                        "Correo o contrasena incorrectos"
-                ));
+                .orElseThrow(() -> {
+                    log.warn("Login rejected because user was not found");
+                    return new ResponseStatusException(
+                            HttpStatus.UNAUTHORIZED,
+                            "Correo o contrasena incorrectos"
+                    );
+                });
 
         if (!user.isActive()) {
+            log.warn("Login rejected because user id={} is inactive", user.getId());
             throw new UserInactiveException("El usuario esta desactivado");
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            log.warn("Login rejected because credentials are invalid for user id={}", user.getId());
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED,
                     "Correo o contrasena incorrectos"
             );
         }
 
+        log.info("User id={} authenticated successfully", user.getId());
         return new LoginResponse(jwtService.generateToken(user), toResponse(user));
     }
 
     @Transactional(readOnly = true)
     public UserResponse getProfile(String email) {
-        return toResponse(findActiveUser(email));
+        User user = findActiveUser(email);
+        log.debug("Profile loaded for user id={}", user.getId());
+        return toResponse(user);
     }
 
     @Transactional
@@ -92,13 +107,18 @@ public class UserService {
         user.setName(request.name().trim());
         user.setUniversity(request.university().trim());
         user.setCareer(request.career().trim());
+        log.info("Profile updated for user id={}", user.getId());
         return toResponse(user);
     }
 
     private User findActiveUser(String email) {
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("User lookup failed because authenticated principal was not found");
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado");
+                });
         if (!user.isActive()) {
+            log.warn("User lookup rejected because user id={} is inactive", user.getId());
             throw new UserInactiveException("El usuario esta desactivado");
         }
         return user;

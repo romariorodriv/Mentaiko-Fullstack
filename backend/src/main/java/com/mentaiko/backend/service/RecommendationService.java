@@ -2,6 +2,8 @@ package com.mentaiko.backend.service;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +26,8 @@ import com.mentaiko.backend.repository.UserRepository;
 
 @Service
 public class RecommendationService {
+
+    private static final Logger log = LoggerFactory.getLogger(RecommendationService.class);
 
     private final ActivityRecommendationRepository recommendationRepository;
     private final EmotionActivityRuleRepository ruleRepository;
@@ -49,17 +53,27 @@ public class RecommendationService {
     public RecommendationResponse recommend(String userEmail, Long checkinId) {
         User user = findActiveUser(userEmail);
         EmotionalEntry checkin = emotionalEntryRepository.findByIdAndUserWithEmotion(checkinId, user)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in no encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Recommendation rejected for check-in id={} and user id={} because check-in was not found or is not owned by user",
+                            checkinId, user.getId());
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in no encontrado");
+                });
 
         return recommendationRepository.findByCheckin(checkin)
-                .map(this::toResponse)
+                .map(recommendation -> {
+                    log.debug("Existing recommendation id={} returned for check-in id={}",
+                            recommendation.getId(), checkinId);
+                    return toResponse(recommendation);
+                })
                 .orElseGet(() -> createRecommendation(user, checkin));
     }
 
     @Transactional(readOnly = true)
     public List<RecommendationResponse> listMine(String userEmail) {
         User user = findActiveUser(userEmail);
-        return recommendationRepository.findByUserWithDetails(user).stream()
+        List<ActivityRecommendation> recommendations = recommendationRepository.findByUserWithDetails(user);
+        log.debug("Recommendations loaded for user id={} count={}", user.getId(), recommendations.size());
+        return recommendations.stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -68,12 +82,17 @@ public class RecommendationService {
     public RecommendationResponse complete(String userEmail, Long id) {
         User user = findActiveUser(userEmail);
         ActivityRecommendation recommendation = recommendationRepository.findByIdAndUserWithDetails(id, user)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Recomendacion no encontrada"
-                ));
+                .orElseThrow(() -> {
+                    log.warn("Recommendation completion rejected for id={} and user id={} because recommendation was not found or is not owned by user",
+                            id, user.getId());
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Recomendacion no encontrada"
+                    );
+                });
 
         recommendation.complete();
+        log.info("Recommendation id={} completed by user id={}", recommendation.getId(), user.getId());
         return toResponse(recommendation);
     }
 
@@ -90,7 +109,14 @@ public class RecommendationService {
                 ? "No hay una regla activa para " + emotion.getName() + "; sugerimos una actividad activa del catalogo."
                 : "Recomendacion asociada a la emocion " + emotion.getName() + ".");
 
-        return toResponse(recommendationRepository.save(recommendation));
+        ActivityRecommendation savedRecommendation = recommendationRepository.save(recommendation);
+        log.info("Recommendation created with id={} for user id={} check-in id={} activity id={} fallbackUsed={}",
+                savedRecommendation.getId(),
+                user.getId(),
+                checkin.getId(),
+                choice.activity().getId(),
+                choice.fallbackUsed());
+        return toResponse(savedRecommendation);
     }
 
     private ActivityChoice chooseActivity(Emotion emotion) {
@@ -98,16 +124,23 @@ public class RecommendationService {
                 .map(rule -> new ActivityChoice(rule.getActivity(), false))
                 .orElseGet(() -> microActivityRepository.findFirstByActiveTrueOrderByTitleAscIdAsc()
                         .map(activity -> new ActivityChoice(activity, true))
-                        .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "No hay microactividades activas disponibles"
-                        )));
+                        .orElseThrow(() -> {
+                            log.warn("Recommendation creation rejected because there are no active micro-activities");
+                            return new ResponseStatusException(
+                                    HttpStatus.NOT_FOUND,
+                                    "No hay microactividades activas disponibles"
+                            );
+                        }));
     }
 
     private User findActiveUser(String email) {
         User user = userRepository.findByEmailIgnoreCase(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Recommendation operation rejected because authenticated user was not found");
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado");
+                });
         if (!user.isActive()) {
+            log.warn("Recommendation operation rejected because user id={} is inactive", user.getId());
             throw new UserInactiveException("El usuario esta desactivado");
         }
         return user;
