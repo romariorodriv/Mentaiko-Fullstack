@@ -14,6 +14,7 @@ import { ReminderApi } from '../../core/services/reminder-api.service';
       <nav>
         <p class="nav-caption">MI ESPACIO</p>
         <a routerLink="/app/dashboard" routerLinkActive="active" (click)="menuOpen.set(false)"><span>⌂</span> Resumen</a>
+        <a routerLink="/app/preferencias-actividades" routerLinkActive="active" (click)="menuOpen.set(false)">Preferencias de actividades</a>
         <a routerLink="/app/factores" routerLinkActive="active" (click)="menuOpen.set(false)">Factores emocionales</a>
         <a routerLink="/app/recordatorios" routerLinkActive="active" (click)="menuOpen.set(false)">Recordatorios</a>
         <a routerLink="/app/meta-semanal" routerLinkActive="active" (click)="menuOpen.set(false)">Mi meta semanal</a>
