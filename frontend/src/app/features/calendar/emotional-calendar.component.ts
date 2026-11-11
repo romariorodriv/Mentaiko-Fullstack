@@ -2,6 +2,8 @@ import {Component, OnInit, inject, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {finalize} from 'rxjs';
 import {environment} from '../../../environments/environment';
+import {ApiService} from '../../core/services/api.service';
+import {Checkin} from '../../shared/models/models';
 
 interface EmotionCount {emotionId: number; emotion: string; count: number}
 interface CalendarDay {date: string; total: number; emotions: EmotionCount[]}
@@ -42,6 +44,23 @@ interface CalendarMonth {year: number; month: number; days: CalendarDay[]}
         @for(item of day.emotions; track item.emotionId){
           <p>{{item.emotion}}: {{item.count}} registro{{item.count===1?'':'s'}}</p>
         }
+        @if(detailLoading()){<p role="status">Cargando registros del día...</p>}
+        @if(detailError()){<p class="alert error" role="alert">{{detailError()}}</p>}
+        @for(checkin of detailEntries();track checkin.id){
+          <article class="calendar-entry">
+            <strong>{{checkin.emotion.name}} · {{checkin.intensity}}/5</strong>
+            <p>{{checkin.context}}</p>
+            @if(checkin.note){<p>{{checkin.note}}</p>}
+            <small>{{checkin.createdAt}}</small>
+          </article>
+        }
+        @if(detailPages()>1){
+          <div class="calendar-toolbar">
+            <button class="btn" type="button" (click)="loadEntries(detailPage()-1)" [disabled]="detailPage()===0 || detailLoading()">Anterior</button>
+            <span>Página {{detailPage()+1}} de {{detailPages()}}</span>
+            <button class="btn" type="button" (click)="loadEntries(detailPage()+1)" [disabled]="detailPage()+1>=detailPages() || detailLoading()">Siguiente</button>
+          </div>
+        }
       </section>
     }
   </section>
@@ -56,15 +75,23 @@ interface CalendarMonth {year: number; month: number; days: CalendarDay[]}
     .calendar-day.selected{outline:2px solid #4168a2}
     .calendar-day:focus-visible{outline:3px solid #4168a2}
     .calendar-detail{margin-top:1.2rem;border-top:1px solid #ccd3dd;padding-top:1rem}
+    .calendar-entry{padding:.8rem;border-bottom:1px solid #ccd3dd}
     @media(max-width:600px){.calendar-grid{gap:.1rem}.calendar-day{min-height:3.2rem;padding:.1rem}.calendar-day small{font-size:.6rem}}
   `]
 })
 export class EmotionalCalendarComponent implements OnInit {
   private readonly http=inject(HttpClient);
+  private readonly api=inject(ApiService);
+  private selectionVersion=0;
   readonly weekdays=['L','M','X','J','V','S','D'];
   readonly loading=signal(false);
   readonly error=signal('');
   readonly selected=signal<CalendarDay|null>(null);
+  readonly detailEntries=signal<Checkin[]>([]);
+  readonly detailPage=signal(0);
+  readonly detailPages=signal(0);
+  readonly detailLoading=signal(false);
+  readonly detailError=signal('');
   readonly cells=signal<(CalendarDay|null)[]>([]);
   readonly period=signal(new Date(new Date().getFullYear(),new Date().getMonth(),1));
 
@@ -76,11 +103,37 @@ export class EmotionalCalendarComponent implements OnInit {
     const d=this.period();
     this.period.set(new Date(d.getFullYear(),d.getMonth()+delta,1));
     this.selected.set(null);
+    this.selectionVersion++;
+    this.detailEntries.set([]);
     this.load();
   }
   select(date:string) {
     const day=this.cells().find(d=>d?.date===date);
-    if(day) this.selected.set(day);
+    if(day){
+      this.selected.set(day);
+      this.selectionVersion++;
+      this.loadEntries(0);
+    }
+  }
+  loadEntries(page:number){
+    const day=this.selected();
+    if(!day || page<0)return;
+    const requestId=this.selectionVersion;
+    this.detailLoading.set(true);this.detailError.set('');
+    this.api.checkins({from:day.date,to:day.date,page,size:10}).subscribe({
+      next:result=>{
+        if(requestId!==this.selectionVersion)return;
+        this.detailEntries.set(result.content);
+        this.detailPage.set(result.number);
+        this.detailPages.set(result.totalPages);
+        this.detailLoading.set(false);
+      },
+      error:()=>{
+        if(requestId!==this.selectionVersion)return;
+        this.detailLoading.set(false);
+        this.detailError.set('No fue posible cargar el detalle del día.');
+      }
+    });
   }
   load() {
     const d=this.period();
