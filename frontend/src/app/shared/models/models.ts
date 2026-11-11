@@ -7,7 +7,7 @@ export interface Emotion { id: number; name: string; active: boolean; createdAt:
 export interface CheckinEmotion { id: number; name: string; }
 export interface Checkin { id: number; emotion: CheckinEmotion; intensity: number; context: string; note?: string; createdAt: string; }
 export interface CheckinRequest { emotionId: number; intensity: number; context: string; note?: string; }
-export interface MicroActivity { id: number; title: string; description: string; durationMinutes: number; active: boolean; createdAt: string; updatedAt: string; }
+export interface MicroActivity { id: number; title: string; description: string; durationMinutes: number; active: boolean; activityType?: string; createdAt: string; updatedAt: string; }
 export interface CreateMicroActivityRequest { title: string; description: string; durationMinutes: number; }
 export interface UpdateMicroActivityRequest { title?: string; description?: string; durationMinutes?: number; active?: boolean; }
 export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; }
