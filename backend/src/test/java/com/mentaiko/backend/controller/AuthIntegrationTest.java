@@ -31,6 +31,7 @@ import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.UserRepository;
 import com.mentaiko.backend.security.JwtService;
 
+@org.springframework.context.annotation.Import(com.mentaiko.backend.config.TestMailConfiguration.class)
 @SpringBootTest
 @AutoConfigureMockMvc
 class AuthIntegrationTest {

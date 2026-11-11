@@ -12,6 +12,7 @@ import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.enums.Role;
 import com.mentaiko.backend.repository.UserRepository;
 
+@org.springframework.context.annotation.Import(com.mentaiko.backend.config.TestMailConfiguration.class)
 @SpringBootTest(properties = {
         "spring.profiles.active=local",
         "spring.datasource.url=jdbc:h2:mem:admin_local_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",

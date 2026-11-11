@@ -10,6 +10,7 @@ import org.springframework.test.annotation.DirtiesContext;
 import com.mentaiko.backend.enums.Role;
 import com.mentaiko.backend.repository.UserRepository;
 
+@org.springframework.context.annotation.Import(com.mentaiko.backend.config.TestMailConfiguration.class)
 @SpringBootTest(properties = {
         "spring.profiles.active=prod",
         "spring.datasource.url=jdbc:h2:mem:admin_prod_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
