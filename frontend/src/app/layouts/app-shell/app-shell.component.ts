@@ -1,6 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { ReminderApi } from '../../core/services/reminder-api.service';
 
 @Component({
   selector: 'app-shell', standalone: true, imports: [RouterOutlet, RouterLink, RouterLinkActive],
@@ -32,14 +33,33 @@ import { AuthService } from '../../core/auth/auth.service';
     </aside>
     <main class="main-area">
       <header class="topbar"><button class="menu-button" (click)="menuOpen.set(!menuOpen())" aria-label="Abrir menú">☰</button><span class="top-date">Un momento para ti</span><span class="avatar">{{ initials() }}</span></header>
-      <div class="page-container"><router-outlet /></div>
+      <div class="page-container">
+        @if (reminderDue()) {
+          <div class="alert" role="status">
+            <p>Es hora de registrar cómo te sientes.</p>
+            <a routerLink="/app/checkins" (click)="markReminderSeen()">Registrar emoción</a>
+            <button type="button" (click)="markReminderSeen()">Marcar como visto</button>
+          </div>
+        }
+        <router-outlet />
+      </div>
     </main>
     @if (menuOpen()) { <button class="backdrop" (click)="menuOpen.set(false)" aria-label="Cerrar menú"></button> }
   </div>`
 })
 export class ShellComponent implements OnInit {
   readonly menuOpen = signal(false);
-  constructor(public readonly auth: AuthService) {}
-  ngOnInit(): void { if (!this.auth.profile()) this.auth.loadProfile().subscribe({error: () => undefined}); }
+  readonly reminderDue = signal(false);
+  constructor(public readonly auth: AuthService, private readonly reminders: ReminderApi) {}
+  ngOnInit(): void {
+    if (!this.auth.profile()) this.auth.loadProfile().subscribe({error: () => undefined});
+    this.reminders.get().subscribe({next: p => this.reminderDue.set(p.due), error: () => undefined});
+  }
+  markReminderSeen(): void {
+    this.reminders.acknowledge().subscribe({
+      next: p => this.reminderDue.set(p.due),
+      error: () => undefined
+    });
+  }
   initials(): string { return (this.auth.profile()?.name ?? 'M').split(' ').slice(0,2).map(x => x[0]).join('').toUpperCase(); }
 }
