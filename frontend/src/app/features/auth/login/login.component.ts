@@ -11,6 +11,7 @@ import { AuthService } from '../../../core/auth/auth.service';
     <label>Contrasena<input type="password" formControlName="password" placeholder="Tu contrasena"></label>
     @if(error()){<div class="alert error">{{error()}}</div>}
     <button class="btn primary full" [disabled]="form.invalid || loading()">{{loading()?'Ingresando...':'Ingresar a Mentaiko'}}</button>
+    <p class="auth-switch"><a routerLink="/olvide-contrasena">¿Olvidaste tu contraseña?</a></p>
     <p class="auth-switch">Aun no tienes cuenta? <a routerLink="/registro">Crear cuenta</a></p>
   </form></section>
 </main>`})

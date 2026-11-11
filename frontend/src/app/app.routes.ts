@@ -4,6 +4,8 @@ import { adminGuard } from './core/guards/admin.guard';
 import { ShellComponent } from './layouts/app-shell/app-shell.component';
 
 export const routes: Routes = [
+  {path: 'olvide-contrasena', loadComponent: () => import('./features/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent)},
+  {path: 'restablecer-contrasena', loadComponent: () => import('./features/auth/reset-password/reset-password.component').then(m => m.ResetPasswordComponent)},
   {path: '', pathMatch: 'full', loadComponent: () => import('./features/landing/landing.component').then(m => m.LandingComponent)},
   {path: 'login', loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)},
   {path: 'registro', loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)},

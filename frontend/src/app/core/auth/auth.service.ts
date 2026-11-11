@@ -5,6 +5,8 @@ import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AuthResponse, RegisterRequest, Role, UserProfile } from '../../shared/models/models';
 
+export interface PasswordResetMessage { message: string; }
+
 @Injectable({providedIn: 'root'})
 export class AuthService {
   private readonly key = 'mentaiko_token';
@@ -42,6 +44,13 @@ export class AuthService {
     }));
   }
   register(body: RegisterRequest): Observable<UserProfile> { return this.http.post<UserProfile>(`${environment.apiUrl}/auth/register`, body); }
+  forgotPassword(email: string): Observable<PasswordResetMessage> {
+    return this.http.post<PasswordResetMessage>(`${environment.apiUrl}/auth/forgot-password`, {email: email.trim()});
+  }
+  resetPassword(token: string, newPassword: string): Observable<PasswordResetMessage> {
+    return this.http.post<PasswordResetMessage>(`${environment.apiUrl}/auth/reset-password`, {token, newPassword})
+      .pipe(tap(() => this.clearSession()));
+  }
   loadProfile(): Observable<UserProfile> { return this.http.get<UserProfile>(`${environment.apiUrl}/users/me`).pipe(tap(p => this.profileState.set(p))); }
   updateProfile(body: Pick<UserProfile,'name'|'university'|'career'>): Observable<UserProfile> { return this.http.put<UserProfile>(`${environment.apiUrl}/users/me`, body).pipe(tap(p => this.profileState.set(p))); }
   logout(): void { localStorage.removeItem(this.key); this.profileState.set(null); void this.router.navigate(['/login']); }

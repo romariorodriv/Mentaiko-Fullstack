@@ -9,6 +9,10 @@
       "sourceRoot": "src",
       "prefix": "app",
       "architect": {
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {"tsConfig": "tsconfig.spec.json", "watch": false}
+        },
         "build": {
           "builder": "@angular/build:application",
           "options": {
