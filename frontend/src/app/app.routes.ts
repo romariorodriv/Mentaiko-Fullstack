@@ -11,6 +11,7 @@ export const routes: Routes = [
   {path: 'registro', loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)},
   {path: 'app', component: ShellComponent, canActivate: [authGuard], children: [
     {path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)},
+    {path: 'factores', loadComponent: () => import('./features/factors/emotional-factors.component').then(m => m.EmotionalFactorsComponent)},
     {path: 'recordatorios', loadComponent: () => import('./features/reminders/reminders.component').then(m => m.RemindersComponent)},
     {path: 'meta-semanal', loadComponent: () => import('./features/goals/weekly-goal.component').then(m => m.WeeklyGoalComponent)},
     {path: 'calendario', loadComponent: () => import('./features/calendar/emotional-calendar.component').then(m => m.EmotionalCalendarComponent)},
