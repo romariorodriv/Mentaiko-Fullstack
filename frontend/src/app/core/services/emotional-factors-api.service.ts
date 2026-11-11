@@ -3,7 +3,8 @@ import {HttpClient} from '@angular/common/http';
 import {environment} from '../../../environments/environment';
 export interface EmotionalFactor {id:number;code:string;label:string}
 export interface FactorSummary {id:number;label:string;count:number}
-export interface FactorsAnalysis {from:string;to:string;factors:FactorSummary[]}
+export interface FactorEmotion {factor:string;emotion:string;count:number}
+export interface FactorsAnalysis {from:string;to:string;factors:FactorSummary[];associations:FactorEmotion[]}
 @Injectable({providedIn:'root'})
 export class EmotionalFactorsApi {
   private readonly http=inject(HttpClient);
