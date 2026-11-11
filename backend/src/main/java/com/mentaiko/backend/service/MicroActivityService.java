@@ -159,6 +159,7 @@ public class MicroActivityService {
                 activity.getDescription(),
                 activity.getDurationMinutes(),
                 activity.isActive(),
+                activity.getActivityType(),
                 activity.getCreatedAt(),
                 activity.getUpdatedAt()
         );

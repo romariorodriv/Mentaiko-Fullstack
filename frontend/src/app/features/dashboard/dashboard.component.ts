@@ -6,11 +6,12 @@ import { forkJoin } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { ApiService } from '../../core/services/api.service';
 import { DistributionItem, WeeklyPoint } from '../../shared/models/models';
+import { WeeklyGoalCardComponent } from '../goals/weekly-goal-card.component';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule, RouterLink, DecimalPipe],
+  imports: [FormsModule, RouterLink, DecimalPipe, WeeklyGoalCardComponent],
   template: `
     <header class="page-head">
       <div>
@@ -45,6 +46,7 @@ import { DistributionItem, WeeklyPoint } from '../../shared/models/models';
       </section>
 
       <section class="dashboard-grid">
+        <app-weekly-goal-card />
         <article class="panel span-2">
           <div class="panel-head">
             <div>

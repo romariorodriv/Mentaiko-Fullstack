@@ -34,6 +34,12 @@ public class MicroActivity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "activity_type", nullable = false, length = 30)
+    private String activityType = "GENERAL";
+
+    public String getActivityType() {return activityType;}
+    public void setActivityType(String value) {activityType = value;}
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

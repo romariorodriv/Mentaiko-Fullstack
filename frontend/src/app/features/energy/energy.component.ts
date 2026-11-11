@@ -1,4 +1,4 @@
-import {Component, OnInit, inject, signal} from '@angular/core';
+import {Component, OnInit, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {finalize} from 'rxjs';
 import {DailyWellbeingApi, EnergyEntry} from '../../core/services/daily-wellbeing.service';
@@ -27,6 +27,18 @@ import {DailyWellbeingApi, EnergyEntry} from '../../core/services/daily-wellbein
       @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
     </section>
     <section class="panel"><h2>Últimos 30 días</h2>
+      @if(entries().length>0){
+        <p>Promedio de energía: <strong>{{averageEnergy()}}/5</strong> en {{entries().length}} días registrados.</p>
+        <div class="bars" aria-label="Niveles de energía recientes">
+          @for(entry of entries();track entry.date){
+            <div class="bar-item">
+              <span class="bar-value">{{entry.level}}</span>
+              <div class="bar-track"><i [style.height.%]="entry.level*20"></i></div>
+              <small>{{entry.date.slice(5)}}</small>
+            </div>
+          }
+        </div>
+      }
       @if(loading()){<p role="status">Cargando historial...</p>}
       @if(!loading() && entries().length===0){<p>Todavía no registraste tu energía.</p>}
       @for(item of entries();track item.date){
@@ -38,6 +50,10 @@ import {DailyWellbeingApi, EnergyEntry} from '../../core/services/daily-wellbein
 export class EnergyComponent implements OnInit {
   private readonly api=inject(DailyWellbeingApi);
   readonly entries=signal<EnergyEntry[]>([]);
+  readonly averageEnergy=computed(()=>{
+    const items=this.entries();
+    return items.length?(items.reduce((sum,item)=>sum+item.level,0)/items.length).toFixed(1):'0';
+  });
   readonly loading=signal(false);readonly saving=signal(false);
   readonly error=signal('');readonly message=signal('');
   readonly today=this.dateInLima();

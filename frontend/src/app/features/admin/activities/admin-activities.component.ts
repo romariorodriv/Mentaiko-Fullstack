@@ -80,6 +80,15 @@ import { ApiError, MicroActivity, UpdateMicroActivityRequest } from '../../../sh
                 <label>Duracion en minutos
                   <input type="number" formControlName="durationMinutes" min="1" max="120">
                 </label>
+                <label>Tipo de actividad
+                  <select [value]="activity.activityType || 'GENERAL'"
+                    (change)="changeType(activity,$any($event.target).value)"
+                    [disabled]="busyId() !== null">
+                    @for(type of activityTypes; track type.value) {
+                      <option [value]="type.value">{{type.label}}</option>
+                    }
+                  </select>
+                </label>
                 <button class="btn secondary" [disabled]="editForms[activity.id].invalid || busyId() === activity.id || !hasChanges(activity)">
                   {{ busyId() === activity.id ? 'Guardando...' : 'Guardar cambios' }}
                 </button>
@@ -99,6 +108,14 @@ import { ApiError, MicroActivity, UpdateMicroActivityRequest } from '../../../sh
 export class AdminActivitiesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
+  readonly activityTypes = [
+    {value:'GENERAL',label:'General'},
+    {value:'RESPIRACION',label:'Respiración'},
+    {value:'MOVIMIENTO',label:'Movimiento'},
+    {value:'RELAJACION',label:'Relajación'},
+    {value:'ESCRITURA',label:'Escritura'},
+    {value:'ATENCION_PLENA',label:'Atención plena'}
+  ];
   readonly items = signal<MicroActivity[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -180,6 +197,24 @@ export class AdminActivitiesComponent implements OnInit {
       error: error => {
         this.busyId.set(null);
         this.error.set(this.errorMessage(error, 'No se pudo actualizar la microactividad.'));
+      }
+    });
+  }
+
+  changeType(activity: MicroActivity, activityType: string): void {
+    if (this.busyId() !== null || activityType === (activity.activityType ?? 'GENERAL')) return;
+    this.busyId.set(activity.id);
+    this.clearMessages();
+    this.api.setActivityType(activity.id,activityType).subscribe({
+      next: result => {
+        this.busyId.set(null);
+        this.items.update(items => items.map(item => item.id === activity.id
+          ? {...item,activityType:result.activityType} : item));
+        this.success.set('Tipo de actividad actualizado.');
+      },
+      error: () => {
+        this.busyId.set(null);
+        this.error.set('No se pudo cambiar el tipo de actividad.');
       }
     });
   }

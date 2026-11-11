@@ -7,6 +7,10 @@ import com.mentaiko.backend.entity.EmotionActivityRule;
 
 public interface EmotionActivityRuleRepository extends JpaRepository<EmotionActivityRule, Long> {
 
+    java.util.List<EmotionActivityRule> findByEmotionAndActiveTrueAndActivityActiveTrueOrderByPriorityAscActivityTitleAscActivityIdAsc(
+            Emotion emotion
+    );
+
     java.util.Optional<EmotionActivityRule> findFirstByEmotionAndActiveTrueAndActivityActiveTrueOrderByPriorityAscActivityTitleAscActivityIdAsc(
             Emotion emotion
     );

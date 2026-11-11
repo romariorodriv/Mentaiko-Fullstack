@@ -8,6 +8,7 @@ public record MicroActivityResponse(
         String description,
         Integer durationMinutes,
         boolean active,
+        String activityType,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
