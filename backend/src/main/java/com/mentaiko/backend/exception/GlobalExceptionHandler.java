@@ -21,6 +21,12 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiError> handleUnreadableBody(WebRequest request) {
+        // Parser exceptions can contain password fragments. Never log their message or body.
+        return build(HttpStatus.BAD_REQUEST, "El cuerpo JSON no es valido", request, null);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException exception, WebRequest request) {
         Map<String, String> errors = new LinkedHashMap<>();

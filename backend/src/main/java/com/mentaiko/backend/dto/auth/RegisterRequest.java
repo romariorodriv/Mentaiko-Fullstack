@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Size;
+import com.mentaiko.backend.validation.Utf8Password;
 
 public record RegisterRequest(
 
@@ -21,6 +22,7 @@ public record RegisterRequest(
 
         @NotBlank
         @Size(min = 8, max = 72)
+        @Utf8Password
         String password,
 
         @NotNull
