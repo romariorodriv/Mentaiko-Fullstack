@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ResponseStatusException;
 import com.mentaiko.backend.entity.Emotion;
@@ -36,7 +37,7 @@ class EmotionalCalendarControllerTest {
     @Test
     void aggregatesDailyEmotionsWithoutReturningPersonalNotes() {
         User user=new User();user.setId(7L);user.setActive(true);
-        Emotion calm=new Emotion();calm.setId(3L);calm.setName("Calma");
+        Emotion calm=new Emotion();ReflectionTestUtils.setField(calm,"id",3L);calm.setName("Calma");
         EmotionalEntry first=new EmotionalEntry();first.setEmotion(calm);
         first.setCreatedAt(LocalDateTime.of(2026,11,10,9,0));
         EmotionalEntry second=new EmotionalEntry();second.setEmotion(calm);
