@@ -11,6 +11,7 @@ export const routes: Routes = [
   {path: 'registro', loadComponent: () => import('./features/auth/register/register.component').then(m => m.RegisterComponent)},
   {path: 'app', component: ShellComponent, canActivate: [authGuard], children: [
     {path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)},
+    {path: 'calendario', loadComponent: () => import('./features/calendar/emotional-calendar.component').then(m => m.EmotionalCalendarComponent)},
     {path: 'checkins', loadComponent: () => import('./features/checkins/checkins.component').then(m => m.CheckinsComponent)},
     {path: 'actividades', loadComponent: () => import('./features/activities/activities.component').then(m => m.ActivitiesComponent)},
     {path: 'perfil', loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)},
