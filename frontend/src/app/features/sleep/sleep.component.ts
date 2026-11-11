@@ -1,4 +1,4 @@
-import {Component, OnInit, inject, signal} from '@angular/core';
+import {Component, OnInit, computed, inject, signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {finalize} from 'rxjs';
 import {DailyWellbeingApi, SleepEntry} from '../../core/services/daily-wellbeing.service';
@@ -28,6 +28,13 @@ import {DailyWellbeingApi, SleepEntry} from '../../core/services/daily-wellbeing
       @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
     </section>
     <section class="panel"><h2>Últimos 30 días</h2>
+      @if(entries().length>0){
+        <div class="metric-grid">
+          <article class="metric"><span>Promedio de horas</span><strong>{{averageHours()}}</strong></article>
+          <article class="metric"><span>Calidad promedio (1 a 5)</span><strong>{{averageQuality()}}</strong></article>
+          <article class="metric"><span>Días registrados</span><strong>{{entries().length}}</strong></article>
+        </div>
+      }
       @if(loading()){<p role="status">Cargando historial...</p>}
       @if(!loading() && entries().length===0){<p>Todavía no registraste tu descanso.</p>}
       @for(item of entries();track item.date){
@@ -39,6 +46,12 @@ import {DailyWellbeingApi, SleepEntry} from '../../core/services/daily-wellbeing
 export class SleepComponent implements OnInit {
   private readonly api=inject(DailyWellbeingApi);
   readonly entries=signal<SleepEntry[]>([]);
+  readonly averageHours=computed(()=>this.average(item=>item.hours));
+  readonly averageQuality=computed(()=>this.average(item=>item.quality));
+  private average(get:(item:SleepEntry)=>number):string{
+    const values=this.entries();
+    return values.length ? (values.reduce((sum,item)=>sum+get(item),0)/values.length).toFixed(1) : '0';
+  }
   readonly loading=signal(false);readonly saving=signal(false);
   readonly error=signal('');readonly message=signal('');
   readonly today=this.dateInLima();
