@@ -39,6 +39,7 @@ public class JwtService {
         return Jwts.builder()
                 .subject(user.getEmail())
                 .claim("role", user.getRole().name())
+                .claim("av", user.getAuthVersion())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusMillis(expirationMillis)))
                 .signWith(signingKey)
@@ -56,7 +57,11 @@ public class JwtService {
     public boolean isTokenValid(String token, User user) {
         try {
             Claims claims = claims(token);
-            return user.getEmail().equals(claims.getSubject()) && claims.getExpiration().after(new Date());
+            // Legacy JWTs remain usable only until the first password recovery.
+            Number version = claims.get("av", Number.class);
+            long tokenVersion = version == null ? 0 : version.longValue();
+            return tokenVersion == user.getAuthVersion()
+                    && user.getEmail().equals(claims.getSubject()) && claims.getExpiration().after(new Date());
         } catch (JwtException | IllegalArgumentException exception) {
             return false;
         }

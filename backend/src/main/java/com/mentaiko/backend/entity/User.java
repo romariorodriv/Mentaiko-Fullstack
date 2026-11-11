@@ -2,6 +2,7 @@ package com.mentaiko.backend.entity;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -31,6 +32,17 @@ public class User {
 
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
+
+    @Column(name = "auth_version", nullable = false)
+    private long authVersion;
+
+    @Column(name = "password_reset_requested_at")
+    private Instant passwordResetRequestedAt;
+
+    public long getAuthVersion() { return authVersion; }
+    public void invalidateSessions() { authVersion++; }
+    public Instant getPasswordResetRequestedAt() { return passwordResetRequestedAt; }
+    public void setPasswordResetRequestedAt(Instant value) { passwordResetRequestedAt = value; }
 
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
