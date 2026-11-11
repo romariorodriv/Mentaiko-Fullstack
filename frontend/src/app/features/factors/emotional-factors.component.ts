@@ -3,7 +3,7 @@ import {FormsModule} from '@angular/forms';
 import {forkJoin} from 'rxjs';
 import {ApiService} from '../../core/services/api.service';
 import {Checkin} from '../../shared/models/models';
-import {EmotionalFactorsApi, EmotionalFactor, FactorSummary} from '../../core/services/emotional-factors-api.service';
+import {EmotionalFactorsApi, EmotionalFactor, FactorSummary, FactorEmotion} from '../../core/services/emotional-factors-api.service';
 
 @Component({
  selector:'app-emotional-factors',standalone:true,imports:[FormsModule],
@@ -43,7 +43,11 @@ import {EmotionalFactorsApi, EmotionalFactor, FactorSummary} from '../../core/se
    @for(item of summary();track item.id){
      <p>{{item.label}} — {{item.count}} registro{{item.count===1?'':'s'}}</p>
    } @empty {<p>Sin factores registrados en este período.</p>}
-   <small>Resumen descriptivo de los factores seleccionados, sin analizar notas personales.</small>
+   <h3>Factores y emociones registradas</h3>
+   @for(item of associations();track item.factor+'-'+item.emotion){
+     <p>{{item.factor}} · {{item.emotion}}: {{item.count}} registro{{item.count===1?'':'s'}}</p>
+   } @empty {<p>No hay asociaciones suficientes para este período.</p>}
+   <small>Estas coincidencias no demuestran que un factor provoque una emoción. No se analizan notas privadas.</small>
  </section>`
 })
 export class EmotionalFactorsComponent implements OnInit {
@@ -52,6 +56,7 @@ export class EmotionalFactorsComponent implements OnInit {
  readonly catalog=signal<EmotionalFactor[]>([]);
  readonly checkins=signal<Checkin[]>([]);
  readonly summary=signal<FactorSummary[]>([]);
+ readonly associations=signal<FactorEmotion[]>([]);
  readonly selectedId=signal<number|null>(null);
  readonly selectedFactors=signal<number[]>([]);
  readonly loading=signal(false);readonly analysisLoading=signal(false);
@@ -92,8 +97,8 @@ export class EmotionalFactorsComponent implements OnInit {
    const start=this.localDay(new Date(today.getTime()-29*86400000));
    this.analysisLoading.set(true);
    this.factors.analysis(start,end).subscribe({
-     next:data=>{this.summary.set(data.factors);this.analysisLoading.set(false);},
-     error:()=>{this.summary.set([]);this.analysisLoading.set(false);this.error.set('No pudimos cargar el análisis.');}
+     next:data=>{this.summary.set(data.factors);this.associations.set(data.associations??[]);this.analysisLoading.set(false);},
+     error:()=>{this.summary.set([]);this.associations.set([]);this.analysisLoading.set(false);this.error.set('No pudimos cargar el análisis.');}
    });
  }
  private localDay(date:Date){
