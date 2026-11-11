@@ -1,6 +1,9 @@
 package com.mentaiko.backend.service;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,19 +37,22 @@ public class RecommendationService {
     private final EmotionalEntryRepository emotionalEntryRepository;
     private final MicroActivityRepository microActivityRepository;
     private final UserRepository userRepository;
+    private final JdbcTemplate jdbc;
 
     public RecommendationService(
             ActivityRecommendationRepository recommendationRepository,
             EmotionActivityRuleRepository ruleRepository,
             EmotionalEntryRepository emotionalEntryRepository,
             MicroActivityRepository microActivityRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            JdbcTemplate jdbc
     ) {
         this.recommendationRepository = recommendationRepository;
         this.ruleRepository = ruleRepository;
         this.emotionalEntryRepository = emotionalEntryRepository;
         this.microActivityRepository = microActivityRepository;
         this.userRepository = userRepository;
+        this.jdbc = jdbc;
     }
 
     @Transactional
@@ -98,7 +104,7 @@ public class RecommendationService {
 
     private RecommendationResponse createRecommendation(User user, EmotionalEntry checkin) {
         Emotion emotion = checkin.getEmotion();
-        ActivityChoice choice = chooseActivity(emotion);
+        ActivityChoice choice = chooseActivity(emotion, user);
 
         ActivityRecommendation recommendation = new ActivityRecommendation();
         recommendation.setUser(user);
@@ -119,18 +125,32 @@ public class RecommendationService {
         return toResponse(savedRecommendation);
     }
 
-    private ActivityChoice chooseActivity(Emotion emotion) {
-        return ruleRepository.findFirstByEmotionAndActiveTrueAndActivityActiveTrueOrderByPriorityAscActivityTitleAscActivityIdAsc(emotion)
-                .map(rule -> new ActivityChoice(rule.getActivity(), false))
-                .orElseGet(() -> microActivityRepository.findFirstByActiveTrueOrderByTitleAscIdAsc()
-                        .map(activity -> new ActivityChoice(activity, true))
-                        .orElseThrow(() -> {
-                            log.warn("Recommendation creation rejected because there are no active micro-activities");
-                            return new ResponseStatusException(
-                                    HttpStatus.NOT_FOUND,
-                                    "No hay microactividades activas disponibles"
-                            );
-                        }));
+    private ActivityChoice chooseActivity(Emotion emotion, User user) {
+        List<String> preferredTypes = jdbc.query(
+                "SELECT activity_type FROM activity_preferences WHERE user_id=?",
+                (rs, row) -> rs.getString(1), user.getId());
+        Set<String> preferred = new HashSet<>(preferredTypes);
+
+        var rules = ruleRepository
+                .findByEmotionAndActiveTrueAndActivityActiveTrueOrderByPriorityAscActivityTitleAscActivityIdAsc(emotion);
+        // If no preferences exist, preserve the original first-by-priority rule.
+        if (!rules.isEmpty()) {
+            var selected = preferred.isEmpty() ? rules.get(0)
+                    : rules.stream()
+                        .filter(rule -> preferred.contains(rule.getActivity().getActivityType()))
+                        .findFirst().orElse(rules.get(0));
+            return new ActivityChoice(selected.getActivity(), false);
+        }
+
+        var active = microActivityRepository.findByActiveTrueOrderByTitleAscIdAsc();
+        if (active.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
+                    "No hay microactividades activas disponibles");
+        }
+        var selected = preferred.isEmpty() ? active.get(0)
+                : active.stream().filter(activity -> preferred.contains(activity.getActivityType()))
+                    .findFirst().orElse(active.get(0));
+        return new ActivityChoice(selected, true);
     }
 
     private User findActiveUser(String email) {
