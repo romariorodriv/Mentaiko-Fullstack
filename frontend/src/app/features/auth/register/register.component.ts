@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { utf8PasswordValidator } from '../password.validators';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({selector:'app-register',standalone:true,imports:[ReactiveFormsModule,RouterLink],template:`
@@ -11,12 +12,12 @@ import { AuthService } from '../../../core/auth/auth.service';
 <label>Universidad<input formControlName="university" placeholder="UPC">@if(showError('university')){<small>La universidad es obligatoria.</small>}</label>
 <label>Carrera<input formControlName="career" placeholder="Ingenieria de Software">@if(showError('career')){<small>La carrera es obligatoria.</small>}</label>
 <label class="span-2">Correo electronico<input type="email" formControlName="email" placeholder="tu@universidad.edu.pe">@if(showError('email')){<small>Ingresa un correo valido.</small>}</label>
-<label>Contrasena<input type="password" formControlName="password" placeholder="Minimo 8 caracteres">@if(showError('password')){<small>Usa entre 8 y 72 caracteres.</small>}</label>
+<label>Contrasena<input type="password" formControlName="password" placeholder="Minimo 8 caracteres">@if(showError('password')){<small>Usa al menos 8 caracteres y como máximo 72 bytes UTF-8.</small>}</label>
 <label>Confirmar contrasena<input type="password" formControlName="confirmPassword" placeholder="Repitela">@if(showError('confirmPassword')){<small>Confirma tu contrasena.</small>}</label></div>
 @if(error()){<div class="alert error">{{error()}}</div>}<button class="btn primary full" [disabled]="form.invalid||loading()">{{loading()?'Creando cuenta...':'Crear mi cuenta'}}</button><p class="auth-switch">Ya tienes cuenta? <a routerLink="/login">Iniciar sesion</a></p></form></section></main>`})
 export class RegisterComponent{
  private readonly fb=inject(FormBuilder);
- readonly loading=signal(false);readonly error=signal('');readonly maxBirthDate=this.yesterday();readonly form=this.fb.nonNullable.group({name:['',[Validators.required,Validators.minLength(2),Validators.maxLength(100)]],birthDate:['',[Validators.required,this.pastDateValidator.bind(this)]],university:['',[Validators.required,Validators.maxLength(150)]],career:['',[Validators.required,Validators.maxLength(150)]],email:['',[Validators.required,Validators.email,Validators.maxLength(150)]],password:['',[Validators.required,Validators.minLength(8),Validators.maxLength(72)]],confirmPassword:['',Validators.required]});
+ readonly loading=signal(false);readonly error=signal('');readonly maxBirthDate=this.yesterday();readonly form=this.fb.nonNullable.group({name:['',[Validators.required,Validators.minLength(2),Validators.maxLength(100)]],birthDate:['',[Validators.required,this.pastDateValidator.bind(this)]],university:['',[Validators.required,Validators.maxLength(150)]],career:['',[Validators.required,Validators.maxLength(150)]],email:['',[Validators.required,Validators.email,Validators.maxLength(150)]],password:['',[Validators.required,Validators.minLength(8),Validators.maxLength(72),utf8PasswordValidator]],confirmPassword:['',Validators.required]});
  constructor(private readonly auth:AuthService,private readonly router:Router){}
  submit():void{const v=this.form.getRawValue();if(this.form.invalid){this.form.markAllAsTouched();return;}if(v.password!==v.confirmPassword){this.error.set('Las contrasenas no coinciden.');return;}this.loading.set(true);this.error.set('');const{name,email,password,birthDate,university,career}=v;this.auth.register({name,email,password,birthDate,university,career}).subscribe({next:()=>void this.router.navigate(['/login']),error:e=>{this.loading.set(false);this.error.set(e.status===409?'Ese correo ya esta registrado.':e.error?.message??'Revisa los datos o la conexion con el servidor.');}});}
  showError(name:string):boolean{const control=this.form.get(name);return !!control&&(control.touched||control.dirty)&&control.invalid;}

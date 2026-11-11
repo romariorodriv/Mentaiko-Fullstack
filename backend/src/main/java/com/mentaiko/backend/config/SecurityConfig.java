@@ -22,6 +22,8 @@ import com.mentaiko.backend.security.CustomUserDetailsService;
 import com.mentaiko.backend.security.JsonAccessDeniedHandler;
 import com.mentaiko.backend.security.JsonAuthenticationEntryPoint;
 import com.mentaiko.backend.security.JwtAuthenticationFilter;
+import com.mentaiko.backend.security.PasswordResetRateLimiter;
+import com.mentaiko.backend.security.PasswordResetRateLimitFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -32,7 +34,8 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             AuthenticationProvider authenticationProvider,
             JsonAuthenticationEntryPoint authenticationEntryPoint,
-            JsonAccessDeniedHandler accessDeniedHandler
+            JsonAccessDeniedHandler accessDeniedHandler,
+            PasswordResetRateLimiter passwordResetRateLimiter
     ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -62,6 +65,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .authenticationProvider(authenticationProvider)
+                .addFilterBefore(new PasswordResetRateLimitFilter(passwordResetRateLimiter), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -85,7 +89,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedOrigins(List.of(
+        "http://localhost:4200",
+        "https://mentaiko-app.duckdns.org"
+));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(false);
