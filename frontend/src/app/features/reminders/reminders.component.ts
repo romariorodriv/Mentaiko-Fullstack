@@ -63,7 +63,7 @@ export class RemindersComponent implements OnInit {
  }
  save(){
    if(this.saving())return;
-   if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(this.time)||this.selectedDays().length===0){
+   if(!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(this.time)||this.selectedDays().length===0){
      this.error.set('Selecciona una hora válida y por lo menos un día.');return;
    }
    this.error.set('');this.message.set('');this.saving.set(true);
