@@ -11,6 +11,7 @@ import { AuthService } from '../../core/auth/auth.service';
       <nav>
         <p class="nav-caption">MI ESPACIO</p>
         <a routerLink="/app/dashboard" routerLinkActive="active" (click)="menuOpen.set(false)"><span>⌂</span> Resumen</a>
+        <a routerLink="/app/recordatorios" routerLinkActive="active" (click)="menuOpen.set(false)">Recordatorios</a>
         <a routerLink="/app/meta-semanal" routerLinkActive="active" (click)="menuOpen.set(false)">Mi meta semanal</a>
         <a routerLink="/app/calendario" routerLinkActive="active" (click)="menuOpen.set(false)"><span>▦</span> Calendario emocional</a>
         <a routerLink="/app/sueno" routerLinkActive="active" (click)="menuOpen.set(false)">Mi sueño</a>
