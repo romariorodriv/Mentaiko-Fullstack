@@ -17,7 +17,9 @@ public class EmotionalFactorsService {
 
     public record Factor(int id, String code, String label) {}
     public record FactorSummary(int id, String label, long count) {}
-    public record Analysis(LocalDate from, LocalDate to, List<FactorSummary> factors) {}
+    public record FactorEmotion(String factor, String emotion, long count) {}
+    public record Analysis(LocalDate from, LocalDate to, List<FactorSummary> factors,
+                           List<FactorEmotion> associations) {}
 
     public EmotionalFactorsService(JdbcTemplate jdbc, UserRepository users) {
         this.jdbc=jdbc; this.users=users;
@@ -87,6 +89,16 @@ public class EmotionalFactorsService {
             GROUP BY f.id,f.label ORDER BY uses DESC,f.label ASC
             """, (rs,i)->new FactorSummary(rs.getInt(1),rs.getString(2),rs.getLong(3)),
             user,from.atStartOfDay(),to.plusDays(1).atStartOfDay());
-        return new Analysis(from,to,summary);
+        List<FactorEmotion> associations=jdbc.query("""
+            SELECT f.label,e.name,COUNT(*) AS uses
+            FROM checkin_factors cf
+            JOIN checkins c ON c.id=cf.checkin_id
+            JOIN emotional_factors f ON f.id=cf.factor_id
+            JOIN emotions e ON e.id=c.emotion_id
+            WHERE c.user_id=? AND c.created_at>=? AND c.created_at<?
+            GROUP BY f.label,e.name ORDER BY uses DESC,f.label ASC,e.name ASC
+            """, (rs,i)->new FactorEmotion(rs.getString(1),rs.getString(2),rs.getLong(3)),
+            user,from.atStartOfDay(),to.plusDays(1).atStartOfDay());
+        return new Analysis(from,to,summary,associations);
     }
 }
