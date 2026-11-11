@@ -22,6 +22,8 @@ import com.mentaiko.backend.security.CustomUserDetailsService;
 import com.mentaiko.backend.security.JsonAccessDeniedHandler;
 import com.mentaiko.backend.security.JsonAuthenticationEntryPoint;
 import com.mentaiko.backend.security.JwtAuthenticationFilter;
+import com.mentaiko.backend.security.PasswordResetRateLimiter;
+import com.mentaiko.backend.security.PasswordResetRateLimitFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -32,7 +34,8 @@ public class SecurityConfig {
             JwtAuthenticationFilter jwtAuthenticationFilter,
             AuthenticationProvider authenticationProvider,
             JsonAuthenticationEntryPoint authenticationEntryPoint,
-            JsonAccessDeniedHandler accessDeniedHandler
+            JsonAccessDeniedHandler accessDeniedHandler,
+            PasswordResetRateLimiter passwordResetRateLimiter
     ) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
@@ -62,6 +65,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 .authenticationProvider(authenticationProvider)
+                .addFilterBefore(new PasswordResetRateLimitFilter(passwordResetRateLimiter), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
