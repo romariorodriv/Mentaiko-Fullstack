@@ -12,6 +12,8 @@ export const routes: Routes = [
   {path: 'app', component: ShellComponent, canActivate: [authGuard], children: [
     {path: 'dashboard', loadComponent: () => import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent)},
     {path: 'calendario', loadComponent: () => import('./features/calendar/emotional-calendar.component').then(m => m.EmotionalCalendarComponent)},
+    {path: 'sueno', loadComponent: () => import('./features/sleep/sleep.component').then(m => m.SleepComponent)},
+    {path: 'energia', loadComponent: () => import('./features/energy/energy.component').then(m => m.EnergyComponent)},
     {path: 'checkins', loadComponent: () => import('./features/checkins/checkins.component').then(m => m.CheckinsComponent)},
     {path: 'actividades', loadComponent: () => import('./features/activities/activities.component').then(m => m.ActivitiesComponent)},
     {path: 'perfil', loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)},
