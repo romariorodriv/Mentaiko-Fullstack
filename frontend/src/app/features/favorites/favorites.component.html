@@ -1,0 +1,50 @@
+<header class="page-head">
+  <div>
+    <span class="eyebrow">TU ESPACIO PERSONAL</span>
+    <h1>Mis microactividades favoritas</h1>
+    <p>Conserva las actividades que quieras volver a consultar.</p>
+  </div>
+  <a class="btn secondary" routerLink="/app/actividades">Explorar microactividades</a>
+</header>
+
+@if (error()) {
+  <p class="alert error" role="alert">{{ error() }}</p>
+}
+@if (message()) {
+  <p class="alert success" role="status">{{ message() }}</p>
+}
+@if (loading()) {
+  <p class="loading-panel" role="status">Cargando tus favoritas...</p>
+} @else {
+  <section class="panel favorites-panel" aria-label="Listado de microactividades favoritas">
+    <div class="favorites-heading">
+      <h2>Actividades guardadas</h2>
+      <span>{{ favorites().length }} guardadas</span>
+    </div>
+    @for (activity of favorites(); track activity.id) {
+      <article class="favorite-item">
+        <div class="favorite-content">
+          <span class="favorite-duration">{{ activity.durationMinutes }} min</span>
+          <h3>{{ activity.title }}</h3>
+          <p>{{ activity.description }}</p>
+          @if (!activity.active) {
+            <small>Esta actividad ya no está disponible en el catálogo.</small>
+          }
+        </div>
+        <button type="button" class="btn secondary"
+                [disabled]="busyId() !== null"
+                [attr.aria-label]="'Quitar ' + activity.title + ' de favoritas'"
+                (click)="remove(activity.id)">
+          {{ busyId() === activity.id ? 'Quitando...' : 'Quitar de favoritas' }}
+        </button>
+      </article>
+    } @empty {
+      <div class="empty">
+        <b>No tienes actividades favoritas todavía.</b>
+        <p>Explora el catálogo y guarda las que quieras consultar después.</p>
+        <a routerLink="/app/actividades">Ver microactividades</a>
+      </div>
+    }
+  </section>
+}
+<p class="disclaimer">Estas actividades no reemplazan la atención profesional.</p>
