@@ -67,7 +67,7 @@ import { MicroActivity, Recommendation } from '../../shared/models/models';
                 <b>{{ activity.title }}</b>
                 <p>{{ activity.description }}</p>
                 <button type="button" class="btn secondary favorite-toggle"
-                  [disabled]="favoriteBusyId() !== null || favoritesLoading()"
+                  [disabled]="favoriteBusyId() !== null || favoritesLoading() || favoritesFailed()"
                   [attr.aria-pressed]="favoriteIds().has(activity.id)"
                   [attr.aria-label]="favoriteIds().has(activity.id) ? 'Quitar ' + activity.title + ' de favoritas' : 'Guardar ' + activity.title + ' en favoritas'"
                   (click)="toggleFavorite(activity)">
@@ -97,6 +97,7 @@ export class ActivitiesComponent implements OnInit {
   readonly success = signal('');
   readonly favoriteIds = signal<Set<number>>(new Set<number>());
   readonly favoritesLoading = signal(true);
+  readonly favoritesFailed = signal(false);
   readonly favoriteBusyId = signal<number | null>(null);
 
   constructor(private readonly api: ApiService, private readonly favoritesApi: FavoriteMicroactivitiesApiService) {}
@@ -110,9 +111,10 @@ export class ActivitiesComponent implements OnInit {
     this.error.set('');
     this.success.set('');
     this.favoritesLoading.set(true);
+    this.favoritesFailed.set(false);
     this.favoritesApi.list().subscribe({
       next: items => { this.favoriteIds.set(new Set(items.map(item => item.id))); this.favoritesLoading.set(false); },
-      error: () => { this.favoritesLoading.set(false); this.error.set('No se pudieron cargar las favoritas.'); }
+      error: () => { this.favoritesLoading.set(false); this.favoritesFailed.set(true); this.error.set('No se pudieron cargar las favoritas. Actualiza para volver a intentar.'); }
     });
     this.api.activities(true).subscribe({
       next: activities => {
@@ -140,7 +142,7 @@ export class ActivitiesComponent implements OnInit {
   }
 
   toggleFavorite(activity: MicroActivity): void {
-    if (this.favoriteBusyId() !== null || this.favoritesLoading()) return;
+    if (this.favoriteBusyId() !== null || this.favoritesLoading() || this.favoritesFailed()) return;
     const isFavorite = this.favoriteIds().has(activity.id);
     this.favoriteBusyId.set(activity.id);
     this.error.set('');
