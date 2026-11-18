@@ -120,6 +120,26 @@ class FavoriteMicroActivityIntegrationTest {
     }
 
     @Test
+    void existingFavoriteRemainsVisibleAfterActivityDeactivation() throws Exception {
+        User owner = user("inactive-stored@example.com");
+        MicroActivity activity = activity("Estiramiento", true);
+        String token = bearer(owner);
+
+        mvc.perform(put("/api/me/favorite-micro-activities/" + activity.getId())
+                .header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isOk());
+
+        activity.setActive(false);
+        activities.saveAndFlush(activity);
+
+        mvc.perform(get("/api/me/favorite-micro-activities")
+                .header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].active").value(false));
+    }
+
+    @Test
     void rejectsUnknownAndInactiveActivities() throws Exception {
         User owner = user("invalid-favorite@example.com");
         MicroActivity inactive = activity("Pausa", false);
