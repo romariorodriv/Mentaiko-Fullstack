@@ -26,6 +26,8 @@ import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.enums.Role;
 import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.EmotionActivityRuleRepository;
+import com.mentaiko.backend.repository.EmotionalEntryRepository;
+import com.mentaiko.backend.repository.EmotionRepository;
 import com.mentaiko.backend.repository.FavoriteMicroActivityRepository;
 import com.mentaiko.backend.repository.MicroActivityRepository;
 import com.mentaiko.backend.repository.UserRepository;
@@ -44,6 +46,8 @@ class FavoriteMicroActivityIntegrationTest {
     @Autowired JwtService jwt;
     @Autowired ActivityRecommendationRepository recommendations;
     @Autowired EmotionActivityRuleRepository rules;
+    @Autowired EmotionalEntryRepository entries;
+    @Autowired EmotionRepository emotions;
 
     @BeforeEach
     @AfterEach
@@ -51,7 +55,9 @@ class FavoriteMicroActivityIntegrationTest {
         favorites.deleteAll();
         recommendations.deleteAll();
         rules.deleteAll();
+        entries.deleteAll();
         activities.deleteAll();
+        emotions.deleteAll();
         users.deleteAll();
     }
 
