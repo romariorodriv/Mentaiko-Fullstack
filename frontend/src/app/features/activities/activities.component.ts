@@ -1,4 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
+import { Observable } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { FavoriteMicroactivitiesApiService } from '../../core/services/favorite-microactivities-api.service';
 import { MicroActivity, Recommendation } from '../../shared/models/models';
@@ -145,7 +146,7 @@ export class ActivitiesComponent implements OnInit {
     this.error.set('');
     this.success.set('');
 
-    const request = isFavorite
+    const request: Observable<unknown> = isFavorite
       ? this.favoritesApi.remove(activity.id)
       : this.favoritesApi.save(activity.id);
 
