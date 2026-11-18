@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { ApiService } from '../../core/services/api.service';
+import { FavoriteMicroactivitiesApiService } from '../../core/services/favorite-microactivities-api.service';
 import { MicroActivity, Recommendation } from '../../shared/models/models';
 
 @Component({
@@ -64,6 +65,13 @@ import { MicroActivity, Recommendation } from '../../shared/models/models';
                 <span>{{ activity.durationMinutes }} min</span>
                 <b>{{ activity.title }}</b>
                 <p>{{ activity.description }}</p>
+                <button type="button" class="btn secondary favorite-toggle"
+                  [disabled]="favoriteBusyId() !== null || favoritesLoading()"
+                  [attr.aria-pressed]="favoriteIds().has(activity.id)"
+                  [attr.aria-label]="favoriteIds().has(activity.id) ? 'Quitar ' + activity.title + ' de favoritas' : 'Guardar ' + activity.title + ' en favoritas'"
+                  (click)="toggleFavorite(activity)">
+                  {{ favoriteBusyId() === activity.id ? 'Guardando...' : favoriteIds().has(activity.id) ? 'Quitar de favoritas' : 'Guardar como favorita' }}
+                </button>
               </div>
             } @empty {
               <div class="empty activity-empty">
@@ -86,8 +94,11 @@ export class ActivitiesComponent implements OnInit {
   readonly busyId = signal<number | null>(null);
   readonly error = signal('');
   readonly success = signal('');
+  readonly favoriteIds = signal<Set<number>>(new Set<number>());
+  readonly favoritesLoading = signal(true);
+  readonly favoriteBusyId = signal<number | null>(null);
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly api: ApiService, private readonly favoritesApi: FavoriteMicroactivitiesApiService) {}
 
   ngOnInit(): void {
     this.load();
@@ -97,6 +108,11 @@ export class ActivitiesComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
     this.success.set('');
+    this.favoritesLoading.set(true);
+    this.favoritesApi.list().subscribe({
+      next: items => { this.favoriteIds.set(new Set(items.map(item => item.id))); this.favoritesLoading.set(false); },
+      error: () => { this.favoritesLoading.set(false); this.error.set('No se pudieron cargar las favoritas.'); }
+    });
     this.api.activities(true).subscribe({
       next: activities => {
         this.activities.set(activities);
@@ -118,6 +134,37 @@ export class ActivitiesComponent implements OnInit {
       error: () => {
         this.loading.set(false);
         this.error.set('No se pudieron cargar tus recomendaciones.');
+      }
+    });
+  }
+
+  toggleFavorite(activity: MicroActivity): void {
+    if (this.favoriteBusyId() !== null || this.favoritesLoading()) return;
+    const isFavorite = this.favoriteIds().has(activity.id);
+    this.favoriteBusyId.set(activity.id);
+    this.error.set('');
+    this.success.set('');
+
+    const request = isFavorite
+      ? this.favoritesApi.remove(activity.id)
+      : this.favoritesApi.save(activity.id);
+
+    request.subscribe({
+      next: () => {
+        this.favoriteIds.update(previous => {
+          const next = new Set(previous);
+          if (isFavorite) next.delete(activity.id);
+          else next.add(activity.id);
+          return next;
+        });
+        this.favoriteBusyId.set(null);
+        this.success.set(isFavorite
+          ? 'Microactividad retirada de favoritas.'
+          : 'Microactividad guardada en favoritas.');
+      },
+      error: () => {
+        this.favoriteBusyId.set(null);
+        this.error.set('No se pudo actualizar la lista de favoritas.');
       }
     });
   }
