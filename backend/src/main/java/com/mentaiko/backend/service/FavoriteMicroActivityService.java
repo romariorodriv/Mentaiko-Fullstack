@@ -51,9 +51,7 @@ public class FavoriteMicroActivityService {
         users.findLockedById(user.getId()).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
-        return favorites.findByUser_IdOrderByCreatedAtDescIdDesc(user.getId()).stream()
-                .filter(favorite -> favorite.getActivity().getId().equals(activityId))
-                .findFirst()
+        return favorites.findByUser_IdAndActivity_Id(user.getId(), activityId)
                 .map(this::toResponse)
                 .orElseGet(() -> toResponse(favorites.saveAndFlush(
                         new FavoriteMicroActivity(user, activity))));
