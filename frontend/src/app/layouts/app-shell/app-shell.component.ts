@@ -23,6 +23,7 @@ import { ReminderApi } from '../../core/services/reminder-api.service';
         <a routerLink="/app/energia" routerLinkActive="active" (click)="menuOpen.set(false)">Mi energía</a>
         <a routerLink="/app/checkins" routerLinkActive="active" (click)="menuOpen.set(false)"><span>♡</span> Mis check-ins</a>
         <a routerLink="/app/actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span>◉</span> Microactividades</a>
+        <a routerLink="/app/favoritas" routerLinkActive="active" (click)="menuOpen.set(false)"><span>♡</span> Mis favoritas</a>
         <a routerLink="/app/perfil" routerLinkActive="active" (click)="menuOpen.set(false)"><span>○</span> Mi perfil</a>
         @if (auth.role() === 'ADMIN') {
           <p class="nav-caption">ADMINISTRACIÓN</p>
