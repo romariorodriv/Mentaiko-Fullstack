@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.time.LocalDate;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,7 @@ class FavoriteMicroActivityIntegrationTest {
     @Autowired EmotionActivityRuleRepository rules;
 
     @BeforeEach
+    @AfterEach
     void clean() {
         favorites.deleteAll();
         recommendations.deleteAll();
