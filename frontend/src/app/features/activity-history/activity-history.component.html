@@ -1,0 +1,90 @@
+<header class="page-head">
+  <div>
+    <span class="eyebrow">BIENESTAR COTIDIANO</span>
+    <h1>Mi historial de actividades</h1>
+    <p>Consulta las actividades recomendadas y revisa cuáles has completado.</p>
+  </div>
+  <a routerLink="/app/actividades" class="btn secondary">Ir a microactividades</a>
+</header>
+
+@if (error()) {
+  <div class="alert error" role="alert">
+    {{ error() }}
+    <button type="button" (click)="load()">Reintentar</button>
+  </div>
+}
+
+<section class="history-summary" aria-label="Resumen de actividades">
+  <div class="metric">
+    <span>Recomendaciones recibidas</span>
+    <strong>{{ recommendations().length }}</strong>
+  </div>
+  <div class="metric">
+    <span>Actividades completadas</span>
+    <strong>{{ completedCount() }}</strong>
+  </div>
+</section>
+
+<section class="panel history-panel" aria-label="Historial personal de actividades">
+  <div class="history-toolbar">
+    <div>
+      <h2>Registro de actividades</h2>
+      <p>Filtra por estado y por fecha de recomendación o finalización.</p>
+    </div>
+    <button type="button" class="btn secondary" (click)="load()" [disabled]="loading()">Actualizar</button>
+  </div>
+
+  <div class="history-filters">
+    <label for="history-status">Estado
+      <select id="history-status" [value]="status()" (change)="setStatus($any($event.target).value)">
+        <option value="ALL">Todas</option>
+        <option value="COMPLETED">Completadas</option>
+        <option value="PENDING">Pendientes</option>
+      </select>
+    </label>
+    <label for="history-from">Desde
+      <input id="history-from" type="date" [value]="from()" [max]="to() || null"
+        (change)="setFrom($any($event.target).value)">
+    </label>
+    <label for="history-to">Hasta
+      <input id="history-to" type="date" [value]="to()" [min]="from() || null"
+        (change)="setTo($any($event.target).value)">
+    </label>
+    <button type="button" class="btn secondary" (click)="clearFilters()"
+      [disabled]="status() === 'ALL' && !from() && !to()">Limpiar filtros</button>
+  </div>
+
+  @if (loading()) {
+    <p class="loading-panel" role="status">Cargando actividades...</p>
+  } @else {
+    <p class="history-count" role="status">{{ filtered().length }} registros encontrados</p>
+    <div class="history-list">
+      @for (item of filtered(); track item.id) {
+        <article class="history-item">
+          <div class="history-item-info">
+            <span class="history-duration">{{ item.activity.durationMinutes }} min</span>
+            <h3>{{ item.activity.title }}</h3>
+            <p>{{ item.activity.description }}</p>
+            <small>{{ item.reason }}</small>
+          </div>
+          <div class="history-item-meta">
+            @if (item.completedAt) {
+              <span class="status-pill done">Completada</span>
+              <span>Finalizada: {{ item.completedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            } @else {
+              <span class="status-pill">Pendiente</span>
+              <span>Recomendada: {{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="empty">
+          <b>No se encontraron actividades.</b>
+          <p>Modifica los filtros o explora tus microactividades recomendadas.</p>
+          <a routerLink="/app/actividades">Ver microactividades</a>
+        </div>
+      }
+    </div>
+  }
+</section>
+<p class="disclaimer">Las actividades tienen fines informativos y no sustituyen la atención profesional.</p>
