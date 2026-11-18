@@ -34,6 +34,12 @@ Plataforma web universitaria de bienestar emocional.
 | HU13 Distribucion emocional | Implementada |
 | HU14 Indicadores administrativos anonimizados | Implementada |
 
+## HU-24: Microactividades favoritas (rama feature/SCRUM-16)
+
+La funcionalidad de favoritos individuales está desarrollada en una rama de revisión y **no forma parte de main hasta fusionar el PR**. Los usuarios autenticados podrán guardar y retirar microactividades desde el catálogo y consultarlas en `/app/favoritas`. Los favoritos son independientes de las preferencias por tipo de actividad.
+
+Documentación de la implementación: [SCRUM-16](docs/SCRUM-16-favorite-microactivities.md).
+
 ## Verificacion
 
 Backend:
