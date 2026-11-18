@@ -19,6 +19,7 @@ export const routes: Routes = [
     {path: 'sueno', loadComponent: () => import('./features/sleep/sleep.component').then(m => m.SleepComponent)},
     {path: 'energia', loadComponent: () => import('./features/energy/energy.component').then(m => m.EnergyComponent)},
     {path: 'checkins', loadComponent: () => import('./features/checkins/checkins.component').then(m => m.CheckinsComponent)},
+    {path: 'favoritas', loadComponent: () => import('./features/favorites/favorites.component').then(m => m.FavoritesComponent)},
     {path: 'actividades', loadComponent: () => import('./features/activities/activities.component').then(m => m.ActivitiesComponent)},
     {path: 'perfil', loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)},
     {path: 'admin/dashboard', canActivate: [adminGuard], loadComponent: () => import('./features/admin/dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)},
