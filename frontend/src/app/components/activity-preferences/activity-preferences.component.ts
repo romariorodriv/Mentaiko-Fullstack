@@ -3,26 +3,8 @@ import {ActivityPreferencesApi} from '../../core/services/activity-preferences-a
 
 @Component({
  selector:'app-activity-preferences',standalone:true,
- template:`
- <header class="page-head"><div><span class="eyebrow">PERSONALIZACIÓN</span>
- <h1>Mis actividades preferidas</h1>
- <p>Elige qué tipos de microactividades prefieres. Seguirás recibiendo recomendaciones cuando no exista una coincidencia.</p>
- </div></header>
- <section class="panel">
- @if(loading()){<p role="status">Cargando preferencias...</p>}
- @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
- @if(ready()){
-   <fieldset><legend>Tipos de actividades</legend>
-   @for(type of available();track type){
-     <label><input type="checkbox" [checked]="selected().includes(type)"
-       (change)="toggle(type,$any($event.target).checked)"> {{label(type)}}</label>
-   }
-   </fieldset>
-   <p>Puedes dejar todos los tipos sin seleccionar para recibir el comportamiento habitual.</p>
-   <button type="button" class="btn primary" [disabled]="saving()" (click)="save()">Guardar preferencias</button>
-   @if(message()){<p class="alert success" role="status">{{message()}}</p>}
- }
- </section>`
+ templateUrl: './activity-preferences.component.html',
+  styleUrl: './activity-preferences.component.css'
 })
 export class ActivityPreferencesComponent implements OnInit {
  private readonly api=inject(ActivityPreferencesApi);
