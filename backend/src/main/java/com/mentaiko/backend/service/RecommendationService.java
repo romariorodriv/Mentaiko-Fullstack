@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.mentaiko.backend.dto.recommendation.RecommendationActivityResponse;
+import com.mentaiko.backend.dto.recommendation.RecommendationFeedbackRequest;
 import com.mentaiko.backend.dto.recommendation.RecommendationResponse;
 import com.mentaiko.backend.entity.ActivityRecommendation;
 import com.mentaiko.backend.entity.Emotion;
@@ -102,6 +103,38 @@ public class RecommendationService {
         return toResponse(recommendation);
     }
 
+    @Transactional
+    public RecommendationResponse submitFeedback(
+            String userEmail,
+            Long id,
+            RecommendationFeedbackRequest request
+    ) {
+        User user = findActiveUser(userEmail);
+        ActivityRecommendation recommendation = recommendationRepository.findByIdAndUserWithDetails(id, user)
+                .orElseThrow(() -> {
+                    log.warn("Recommendation feedback rejected for id={} and user id={} because recommendation was not found or is not owned by user",
+                            id, user.getId());
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Recomendacion no encontrada"
+                    );
+                });
+
+        if (!recommendation.isCompleted()) {
+            log.warn("Recommendation feedback rejected for id={} and user id={} because the activity is not completed",
+                    id, user.getId());
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Primero debes realizar la actividad para poder valorarla"
+            );
+        }
+
+        String comment = request.feedbackComment() == null ? null : request.feedbackComment().strip();
+        recommendation.rate(request.helpfulnessRating(), comment == null || comment.isEmpty() ? null : comment);
+        log.info("Recommendation id={} rated by user id={}", recommendation.getId(), user.getId());
+        return toResponse(recommendation);
+    }
+
     private RecommendationResponse createRecommendation(User user, EmotionalEntry checkin) {
         Emotion emotion = checkin.getEmotion();
         ActivityChoice choice = chooseActivity(emotion, user);
@@ -183,7 +216,9 @@ public class RecommendationService {
                 recommendation.getReason(),
                 recommendation.isFallbackUsed(),
                 recommendation.getCreatedAt(),
-                recommendation.getCompletedAt()
+                recommendation.getCompletedAt(),
+                recommendation.getHelpfulnessRating(),
+                recommendation.getFeedbackComment()
         );
     }
 

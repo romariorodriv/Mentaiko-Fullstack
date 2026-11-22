@@ -277,6 +277,135 @@ class RecommendationIntegrationTest {
                 .isNull();
     }
 
+    @Test
+    void feedbackRequiresToken() throws Exception {
+        mockMvc.perform(post("/api/recommendations/1/feedback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"helpfulnessRating\":4}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void ownerCanRateCompletedRecommendationWithOptionalComment() throws Exception {
+        User user = saveUser("feedback-owner@example.com");
+        Emotion emotion = saveEmotion("Ansiedad", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Respirar", true);
+        ActivityRecommendation recommendation = saveCompletedRecommendation(user, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/feedback", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"helpfulnessRating\":5,\"feedbackComment\":\"  Me ayudo a calmarme  \"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(recommendation.getId()))
+                .andExpect(jsonPath("$.helpfulnessRating").value(5))
+                .andExpect(jsonPath("$.feedbackComment").value("Me ayudo a calmarme"));
+
+        ActivityRecommendation saved = recommendationRepository.findById(recommendation.getId()).orElseThrow();
+        assertThat(saved.getHelpfulnessRating()).isEqualTo(5);
+        assertThat(saved.getFeedbackComment()).isEqualTo("Me ayudo a calmarme");
+
+        mockMvc.perform(get("/api/recommendations/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].helpfulnessRating").value(5));
+    }
+
+    @Test
+    void ratingWithoutCommentIsAccepted() throws Exception {
+        User user = saveUser("feedback-no-comment@example.com");
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Estirar", true);
+        ActivityRecommendation recommendation = saveCompletedRecommendation(user, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/feedback", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"helpfulnessRating\":3}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.helpfulnessRating").value(3))
+                .andExpect(jsonPath("$.feedbackComment").doesNotExist());
+    }
+
+    @Test
+    void cannotRatePendingRecommendation() throws Exception {
+        User user = saveUser("feedback-pending@example.com");
+        Emotion emotion = saveEmotion("Estres", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Caminar", true);
+        ActivityRecommendation recommendation = saveRecommendation(user, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/feedback", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"helpfulnessRating\":4}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Primero debes realizar la actividad para poder valorarla"));
+
+        assertThat(recommendationRepository.findById(recommendation.getId()).orElseThrow().getHelpfulnessRating())
+                .isNull();
+    }
+
+    @Test
+    void invalidRatingOrTooLongCommentIsRejected() throws Exception {
+        User user = saveUser("feedback-invalid@example.com");
+        Emotion emotion = saveEmotion("Tristeza", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Escribir", true);
+        ActivityRecommendation recommendation = saveCompletedRecommendation(user, checkin, activity);
+
+        for (String body : new String[] {
+                "{\"helpfulnessRating\":0}",
+                "{\"helpfulnessRating\":6}",
+                "{}",
+                "{\"helpfulnessRating\":4,\"feedbackComment\":\"" + "a".repeat(301) + "\"}"
+        }) {
+            mockMvc.perform(post("/api/recommendations/{id}/feedback", recommendation.getId())
+                            .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
+        }
+
+        mockMvc.perform(post("/api/recommendations/{id}/feedback", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"helpfulnessRating\":4,\"feedbackComment\":\"" + "a".repeat(300) + "\"}"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void cannotRateOtherUsersRecommendation() throws Exception {
+        User owner = saveUser("feedback-real-owner@example.com");
+        User other = saveUser("feedback-other@example.com");
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry checkin = saveCheckin(owner, emotion);
+        MicroActivity activity = saveActivity("Respirar", true);
+        ActivityRecommendation recommendation = saveCompletedRecommendation(owner, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/feedback", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(other))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"helpfulnessRating\":5}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Recomendacion no encontrada"));
+
+        assertThat(recommendationRepository.findById(recommendation.getId()).orElseThrow().getHelpfulnessRating())
+                .isNull();
+    }
+
+    private ActivityRecommendation saveCompletedRecommendation(
+            User user,
+            EmotionalEntry checkin,
+            MicroActivity activity
+    ) {
+        ActivityRecommendation recommendation = saveRecommendation(user, checkin, activity);
+        recommendation.complete();
+        return recommendationRepository.save(recommendation);
+    }
+
     private User saveUser(String email) {
         User user = new User();
         user.setName("Usuario Recomendacion");

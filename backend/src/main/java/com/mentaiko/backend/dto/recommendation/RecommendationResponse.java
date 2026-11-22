@@ -9,6 +9,8 @@ public record RecommendationResponse(
         String reason,
         boolean fallbackUsed,
         LocalDateTime createdAt,
-        LocalDateTime completedAt
+        LocalDateTime completedAt,
+        Integer helpfulnessRating,
+        String feedbackComment
 ) {
 }
