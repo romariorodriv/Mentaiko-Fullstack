@@ -45,6 +45,28 @@ import { MicroActivity, Recommendation } from '../../shared/models/models';
                     {{ busyId() === recommendation.id ? 'Guardando...' : 'Marcar completa' }}
                   </button>
                 }
+                @if (recommendation.completedAt) {
+                  <section class="activity-feedback" aria-label="Valorar la utilidad de la actividad">
+                    <span class="feedback-label">¿Te resulto util?</span>
+                    <div class="star-group" role="radiogroup" aria-label="Valoracion de utilidad de 1 a 5">
+                      @for (star of stars; track star) {
+                        <button type="button" class="star" role="radio"
+                                [class.on]="star <= currentRating(recommendation)"
+                                [attr.aria-checked]="star === currentRating(recommendation)"
+                                [attr.aria-label]="star + ' de 5'"
+                                (click)="setRating(recommendation, star)">★</button>
+                      }
+                    </div>
+                    <textarea class="feedback-comment" rows="2" maxlength="300"
+                              placeholder="Comentario opcional (maximo 300 caracteres)"
+                              [value]="currentComment(recommendation)"
+                              (input)="setComment(recommendation, $any($event.target).value)"></textarea>
+                    <button type="button" class="btn secondary" (click)="submitFeedback(recommendation)"
+                            [disabled]="!canSubmitFeedback(recommendation)">
+                      {{ feedbackBusyId() === recommendation.id ? 'Guardando...' : 'Guardar valoracion' }}
+                    </button>
+                  </section>
+                }
               </article>
             } @empty {
               <div class="empty">
@@ -84,6 +106,10 @@ export class ActivitiesComponent implements OnInit {
   readonly recommendations = signal<Recommendation[]>([]);
   readonly loading = signal(true);
   readonly busyId = signal<number | null>(null);
+  readonly feedbackBusyId = signal<number | null>(null);
+  readonly stars = [1, 2, 3, 4, 5];
+  private readonly ratingDrafts = signal<Record<number, number>>({});
+  private readonly commentDrafts = signal<Record<number, string>>({});
   readonly error = signal('');
   readonly success = signal('');
 
@@ -139,6 +165,59 @@ export class ActivitiesComponent implements OnInit {
       error: () => {
         this.busyId.set(null);
         this.error.set('No se pudo completar la recomendacion.');
+      }
+    });
+  }
+
+  currentRating(recommendation: Recommendation): number {
+    return this.ratingDrafts()[recommendation.id] ?? recommendation.helpfulnessRating ?? 0;
+  }
+
+  currentComment(recommendation: Recommendation): string {
+    return this.commentDrafts()[recommendation.id] ?? recommendation.feedbackComment ?? '';
+  }
+
+  setRating(recommendation: Recommendation, rating: number): void {
+    this.ratingDrafts.update(drafts => ({ ...drafts, [recommendation.id]: rating }));
+  }
+
+  setComment(recommendation: Recommendation, comment: string): void {
+    this.commentDrafts.update(drafts => ({ ...drafts, [recommendation.id]: comment.slice(0, 300) }));
+  }
+
+  canSubmitFeedback(recommendation: Recommendation): boolean {
+    const rating = this.currentRating(recommendation);
+    if (rating < 1 || this.feedbackBusyId() !== null) {
+      return false;
+    }
+    const changedRating = rating !== (recommendation.helpfulnessRating ?? 0);
+    const changedComment = this.currentComment(recommendation).trim() !== (recommendation.feedbackComment ?? '');
+    return changedRating || changedComment;
+  }
+
+  submitFeedback(recommendation: Recommendation): void {
+    if (!this.canSubmitFeedback(recommendation)) {
+      return;
+    }
+
+    const comment = this.currentComment(recommendation).trim();
+    this.feedbackBusyId.set(recommendation.id);
+    this.error.set('');
+    this.success.set('');
+    this.api.rateRecommendation(recommendation.id, {
+      helpfulnessRating: this.currentRating(recommendation),
+      feedbackComment: comment || undefined
+    }).subscribe({
+      next: updated => {
+        this.feedbackBusyId.set(null);
+        this.success.set(`Gracias por valorar "${updated.activity.title}".`);
+        this.recommendations.update(items => items.map(item => item.id === updated.id ? updated : item));
+        this.ratingDrafts.update(({ [updated.id]: _removed, ...rest }) => rest);
+        this.commentDrafts.update(({ [updated.id]: _removed, ...rest }) => rest);
+      },
+      error: () => {
+        this.feedbackBusyId.set(null);
+        this.error.set('No se pudo guardar tu valoracion.');
       }
     });
   }
