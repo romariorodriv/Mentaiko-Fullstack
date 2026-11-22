@@ -50,7 +50,7 @@ cd frontend
 npm.cmd run build
 ```
 
-El proyecto Angular no define target de pruebas en `angular.json`; la verificacion automatizada del frontend disponible es el build.
+El proyecto Angular define pruebas con Vitest en `angular.json` y CI ejecuta pruebas y compilación del frontend. Para verificar localmente: `npm.cmd test -- --watch=false` y `npm.cmd run build`.
 
 ## Ejecucion local academica
 

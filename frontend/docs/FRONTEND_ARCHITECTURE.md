@@ -9,7 +9,7 @@ La aplicación utiliza Angular 22 con componentes standalone y organización por
 - `src/app/core/auth`: sesión y autenticación.
 - `src/app/core/guards`: restricciones de navegación.
 - `src/app/core/interceptors`: cabeceras HTTP y token JWT.
-- `src/app/core/services`: integración con la API REST de Spring Boot.
+- `src/app/core/services`: clientes HTTP especializados para la API REST de Spring Boot (emociones, check-ins, actividades, recomendaciones, reportes y administración), junto a los servicios de hábitos y preferencias.
 - `src/app/shared/models`: tipos y contratos de datos reutilizables.
 - `src/app/app.routes.ts`: rutas públicas, autenticadas y administrativas.
 
@@ -38,3 +38,34 @@ npm run build -- --configuration production
 ```
 
 Las pruebas de componentes agregadas por esta reorganización verifican inicialmente que puedan instanciarse; los flujos de negocio y sus interacciones requieren pruebas adicionales. La reorganización no modifica endpoints, modelos de datos ni lógica del servidor.
+
+## Organización de core
+
+```text
+core/
+├── auth/
+│   ├── auth.service.ts
+│   └── auth.service.spec.ts
+├── guards/
+│   ├── auth.guard.ts
+│   └── admin.guard.ts
+├── interceptors/
+│   └── auth.interceptor.ts
+└── services/
+    ├── emotions.service.ts
+    ├── checkins.service.ts
+    ├── activities.service.ts
+    ├── recommendations.service.ts
+    ├── reports.service.ts
+    ├── admin.service.ts
+    ├── daily-wellbeing.service.ts
+    ├── emotional-factors-api.service.ts
+    ├── weekly-goal-api.service.ts
+    ├── reminder-api.service.ts
+    ├── activity-preferences-api.service.ts
+    └── domain-services.spec.ts
+```
+
+Los servicios HTTP exponen los mismos métodos y rutas REST que el cliente general anterior. Los componentes importan únicamente los servicios necesarios para su pantalla. `core/auth` conserva el tratamiento de sesión; los guards e interceptores continúan separados.
+
+Los componentes Angular requieren archivos `.ts`, `.html`, `.css` y `.spec.ts`; los servicios, guards e interceptores no tienen plantilla ni estilos porque no representan vistas. Los contratos HTTP de los seis servicios especializados se verifican en `domain-services.spec.ts`.
