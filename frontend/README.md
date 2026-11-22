@@ -41,3 +41,7 @@ El archivo `API-CONTRACT.md` detalla los endpoints que el backend debe implement
 ## Seguridad
 
 El token JWT se guarda en `localStorage` para este MVP académico y se adjunta como `Authorization: Bearer TOKEN`. Para producción se recomienda revisar el modelo de sesión, CSP, expiración y estrategia frente a XSS.
+
+## Estructura de componentes
+
+Las pantallas se encuentran en `src/app/components` y cada componente cuenta con `.ts`, `.html`, `.css` y `.spec.ts`. El layout autenticado se mantiene en `src/app/layouts`; la sesión, API, guards y modelos siguen separados en `core` y `shared`. Ver `docs/FRONTEND_ARCHITECTURE.md` para las convenciones y estructura.
