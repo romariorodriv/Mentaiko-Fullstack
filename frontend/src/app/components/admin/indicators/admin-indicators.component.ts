@@ -1,6 +1,6 @@
 import { DecimalPipe } from '@angular/common';
 import { Component, OnInit, signal } from '@angular/core';
-import { ApiService } from '../../../core/services/api.service';
+import { AdminService } from '../../../core/services/admin.service';
 import { AdminIndicators } from '../../../shared/models/models';
 
 @Component({
@@ -15,7 +15,7 @@ export class AdminIndicatorsComponent implements OnInit {
   readonly loading = signal(true);
   readonly error = signal('');
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly adminApi: AdminService) {}
 
   ngOnInit(): void {
     this.load();
@@ -24,7 +24,7 @@ export class AdminIndicatorsComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set('');
-    this.api.indicators().subscribe({
+    this.adminApi.indicators().subscribe({
       next: indicators => {
         this.data.set(indicators);
         this.loading.set(false);

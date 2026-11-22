@@ -1,5 +1,6 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { ApiService } from '../../core/services/api.service';
+import { ActivitiesService } from '../../core/services/activities.service';
+import { RecommendationsService } from '../../core/services/recommendations.service';
 import { MicroActivity, Recommendation } from '../../shared/models/models';
 
 @Component({
@@ -16,7 +17,7 @@ export class ActivitiesComponent implements OnInit {
   readonly error = signal('');
   readonly success = signal('');
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly activitiesApi: ActivitiesService, private readonly recommendationsApi: RecommendationsService) {}
 
   ngOnInit(): void {
     this.load();
@@ -26,7 +27,7 @@ export class ActivitiesComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
     this.success.set('');
-    this.api.activities(true).subscribe({
+    this.activitiesApi.activities(true).subscribe({
       next: activities => {
         this.activities.set(activities);
         this.loadRecommendations();
@@ -39,7 +40,7 @@ export class ActivitiesComponent implements OnInit {
   }
 
   private loadRecommendations(): void {
-    this.api.recommendations().subscribe({
+    this.recommendationsApi.recommendations().subscribe({
       next: recommendations => {
         this.recommendations.set(recommendations);
         this.loading.set(false);
@@ -59,7 +60,7 @@ export class ActivitiesComponent implements OnInit {
     this.busyId.set(recommendation.id);
     this.error.set('');
     this.success.set('');
-    this.api.completeRecommendation(recommendation.id).subscribe({
+    this.recommendationsApi.completeRecommendation(recommendation.id).subscribe({
       next: updated => {
         this.busyId.set(null);
         this.success.set(`Microactividad "${updated.activity.title}" completada.`);

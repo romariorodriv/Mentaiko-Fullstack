@@ -1,7 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ApiService } from '../../../core/services/api.service';
+import { ActivitiesService } from '../../../core/services/activities.service';
 import { ApiError, MicroActivity, UpdateMicroActivityRequest } from '../../../shared/models/models';
 
 @Component({
@@ -35,7 +35,7 @@ export class AdminActivitiesComponent implements OnInit {
     durationMinutes: [5, [Validators.required, Validators.min(1), Validators.max(120)]]
   });
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly activitiesApi: ActivitiesService) {}
 
   ngOnInit(): void {
     this.load();
@@ -44,7 +44,7 @@ export class AdminActivitiesComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set('');
-    this.api.activities(false).subscribe({
+    this.activitiesApi.activities(false).subscribe({
       next: activities => {
         this.items.set(activities);
         this.rebuildForms(activities);
@@ -65,7 +65,7 @@ export class AdminActivitiesComponent implements OnInit {
 
     this.saving.set(true);
     this.clearMessages();
-    this.api.createActivity(this.form.getRawValue()).subscribe({
+    this.activitiesApi.createActivity(this.form.getRawValue()).subscribe({
       next: activity => {
         this.saving.set(false);
         this.form.reset({title: '', description: '', durationMinutes: 5});
@@ -94,7 +94,7 @@ export class AdminActivitiesComponent implements OnInit {
 
     this.busyId.set(activity.id);
     this.clearMessages();
-    this.api.updateActivity(activity.id, changes).subscribe({
+    this.activitiesApi.updateActivity(activity.id, changes).subscribe({
       next: updated => {
         this.busyId.set(null);
         this.success.set(`Microactividad "${updated.title}" actualizada.`);
@@ -111,7 +111,7 @@ export class AdminActivitiesComponent implements OnInit {
     if (this.busyId() !== null || activityType === (activity.activityType ?? 'GENERAL')) return;
     this.busyId.set(activity.id);
     this.clearMessages();
-    this.api.setActivityType(activity.id,activityType).subscribe({
+    this.activitiesApi.setActivityType(activity.id,activityType).subscribe({
       next: result => {
         this.busyId.set(null);
         this.items.update(items => items.map(item => item.id === activity.id
@@ -133,7 +133,7 @@ export class AdminActivitiesComponent implements OnInit {
 
     this.busyId.set(activity.id);
     this.clearMessages();
-    this.api.updateActivity(activity.id, {active: !activity.active}).subscribe({
+    this.activitiesApi.updateActivity(activity.id, {active: !activity.active}).subscribe({
       next: updated => {
         this.busyId.set(null);
         this.success.set(`Microactividad "${updated.title}" ${updated.active ? 'activada' : 'desactivada'}.`);

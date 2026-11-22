@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
-import { ApiService } from '../../core/services/api.service';
+import { ReportsService } from '../../core/services/reports.service';
 import { DistributionItem, WeeklyPoint } from '../../shared/models/models';
 import { WeeklyGoalCardComponent } from '../goals/weekly-goal-card.component';
 
@@ -22,7 +22,7 @@ export class DashboardComponent implements OnInit {
   readonly emotions = signal<DistributionItem[]>([]);
   week = this.currentWeek();
 
-  constructor(private readonly api: ApiService, private readonly auth: AuthService) {}
+  constructor(private readonly reports: ReportsService, private readonly auth: AuthService) {}
 
   ngOnInit(): void {
     this.load();
@@ -35,7 +35,7 @@ export class DashboardComponent implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set('');
-    forkJoin({weekly: this.api.weekly(this.week), distribution: this.api.distribution()}).subscribe({
+    forkJoin({weekly: this.reports.weekly(this.week), distribution: this.reports.distribution()}).subscribe({
       next: result => {
         this.weekly.set(result.weekly);
         this.emotions.set(result.distribution.emotions);

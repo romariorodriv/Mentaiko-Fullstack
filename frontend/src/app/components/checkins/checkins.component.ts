@@ -1,7 +1,9 @@
 import { DatePipe } from '@angular/common';
 import { Component, ElementRef, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ApiService } from '../../core/services/api.service';
+import { EmotionsService } from '../../core/services/emotions.service';
+import { CheckinsService } from '../../core/services/checkins.service';
+import { RecommendationsService } from '../../core/services/recommendations.service';
 import { ApiError, Checkin, Emotion } from '../../shared/models/models';
 
 @Component({
@@ -48,7 +50,7 @@ export class CheckinsComponent implements OnInit {
     note: ['', [Validators.maxLength(500)]]
   });
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly emotionsApi: EmotionsService, private readonly checkinsApi: CheckinsService, private readonly recommendationsApi: RecommendationsService) {}
 
   ngOnInit(): void {
     this.loadEmotions();
@@ -57,7 +59,7 @@ export class CheckinsComponent implements OnInit {
 
   loadEmotions(): void {
     this.emotionsLoading.set(true);
-    this.api.emotions(true).subscribe({
+    this.emotionsApi.emotions(true).subscribe({
       next: emotions => {
         this.emotions.set(emotions);
         this.emotionsLoading.set(false);
@@ -73,7 +75,7 @@ export class CheckinsComponent implements OnInit {
     this.historyLoading.set(true);
     this.error.set('');
     const filters = this.filtersForm.getRawValue();
-    this.api.checkins({
+    this.checkinsApi.checkins({
       from: filters.from,
       to: filters.to,
       context: filters.context,
@@ -178,8 +180,8 @@ export class CheckinsComponent implements OnInit {
     const request = this.form.getRawValue();
     const editingId = this.editingId();
     const operation = editingId === null
-      ? this.api.createCheckin(request)
-      : this.api.updateCheckin(editingId, request);
+      ? this.checkinsApi.createCheckin(request)
+      : this.checkinsApi.updateCheckin(editingId, request);
 
     operation.subscribe({
       next: () => {
@@ -207,7 +209,7 @@ export class CheckinsComponent implements OnInit {
 
     this.recommendationBusyId.set(item.id);
     this.clearMessages();
-    this.api.recommend(item.id).subscribe({
+    this.recommendationsApi.recommend(item.id).subscribe({
       next: recommendation => {
         this.recommendationBusyId.set(null);
         this.success.set(`Recomendacion creada: ${recommendation.activity.title}`);
@@ -245,7 +247,7 @@ export class CheckinsComponent implements OnInit {
 
     this.deleting.set(true);
     this.deleteError.set('');
-    this.api.deleteCheckin(target.id).subscribe({
+    this.checkinsApi.deleteCheckin(target.id).subscribe({
       next: () => {
         this.deleting.set(false);
         this.deleteTarget.set(null);

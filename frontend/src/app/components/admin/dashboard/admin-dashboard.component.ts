@@ -1,5 +1,5 @@
 import { Component, OnInit, signal } from '@angular/core';
-import { ApiService } from '../../../core/services/api.service';
+import { AdminService } from '../../../core/services/admin.service';
 import { AdminCheckin, AdminDashboard, AdminUser, PageResponse } from '../../../shared/models/models';
 
 @Component({
@@ -17,14 +17,14 @@ export class AdminDashboardComponent implements OnInit {
   readonly loading = signal(true);
   readonly error = signal('');
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly adminApi: AdminService) {}
 
   ngOnInit(): void { this.load(); }
 
   load(): void {
     this.loading.set(true);
     this.error.set('');
-    this.api.adminDashboard().subscribe({
+    this.adminApi.adminDashboard().subscribe({
       next: data => {
         this.summary.set(data);
         this.loadUsers(0);
@@ -40,11 +40,11 @@ export class AdminDashboardComponent implements OnInit {
 
   loadUsers(page: number): void {
     if (page < 0) return;
-    this.api.adminUsers(page, 10).subscribe({ next: data => { this.users.set(data); this.userPage.set(data.number); } });
+    this.adminApi.adminUsers(page, 10).subscribe({ next: data => { this.users.set(data); this.userPage.set(data.number); } });
   }
 
   loadCheckins(page: number): void {
     if (page < 0) return;
-    this.api.adminCheckins(page, 10).subscribe({ next: data => { this.checkins.set(data); this.checkinPage.set(data.number); } });
+    this.adminApi.adminCheckins(page, 10).subscribe({ next: data => { this.checkins.set(data); this.checkinPage.set(data.number); } });
   }
 }

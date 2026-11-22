@@ -2,7 +2,7 @@ import {Component, OnInit, inject, signal} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
 import {finalize} from 'rxjs';
 import {environment} from '../../../environments/environment';
-import {ApiService} from '../../core/services/api.service';
+import { CheckinsService } from '../../core/services/checkins.service';
 import {Checkin} from '../../shared/models/models';
 
 interface EmotionCount {emotionId: number; emotion: string; count: number}
@@ -18,7 +18,7 @@ interface CalendarMonth {year: number; month: number; days: CalendarDay[]}
 })
 export class EmotionalCalendarComponent implements OnInit {
   private readonly http=inject(HttpClient);
-  private readonly api=inject(ApiService);
+  private readonly checkinsApi=inject(CheckinsService);
   private selectionVersion=0;
   readonly weekdays=['L','M','X','J','V','S','D'];
   readonly loading=signal(false);
@@ -57,7 +57,7 @@ export class EmotionalCalendarComponent implements OnInit {
     if(!day || page<0)return;
     const requestId=this.selectionVersion;
     this.detailLoading.set(true);this.detailError.set('');
-    this.api.checkins({from:day.date,to:day.date,page,size:10}).subscribe({
+    this.checkinsApi.checkins({from:day.date,to:day.date,page,size:10}).subscribe({
       next:result=>{
         if(requestId!==this.selectionVersion)return;
         this.detailEntries.set(result.content);

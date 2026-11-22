@@ -1,7 +1,7 @@
 import {Component,OnInit,inject,signal} from '@angular/core';
 import {FormsModule} from '@angular/forms';
 import {forkJoin} from 'rxjs';
-import {ApiService} from '../../core/services/api.service';
+import { CheckinsService } from '../../core/services/checkins.service';
 import {Checkin} from '../../shared/models/models';
 import {EmotionalFactorsApi, EmotionalFactor, FactorSummary, FactorEmotion} from '../../core/services/emotional-factors-api.service';
 
@@ -11,7 +11,7 @@ import {EmotionalFactorsApi, EmotionalFactor, FactorSummary, FactorEmotion} from
   styleUrl: './emotional-factors.component.css'
 })
 export class EmotionalFactorsComponent implements OnInit {
- private readonly api=inject(ApiService);
+ private readonly checkinsApi=inject(CheckinsService);
  private readonly factors=inject(EmotionalFactorsApi);
  readonly catalog=signal<EmotionalFactor[]>([]);
  readonly checkins=signal<Checkin[]>([]);
@@ -24,7 +24,7 @@ export class EmotionalFactorsComponent implements OnInit {
  ngOnInit(){this.load();this.loadSummary();}
  load(){
    this.loading.set(true);this.error.set('');
-   forkJoin({catalog:this.factors.catalog(),history:this.api.checkins({page:0,size:50})}).subscribe({
+   forkJoin({catalog:this.factors.catalog(),history:this.checkinsApi.checkins({page:0,size:50})}).subscribe({
      next:result=>{this.catalog.set(result.catalog);this.checkins.set(result.history.content);this.loading.set(false);},
      error:()=>{this.loading.set(false);this.error.set('No pudimos cargar los registros emocionales.');}
    });
