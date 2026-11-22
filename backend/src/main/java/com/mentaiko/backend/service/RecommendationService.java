@@ -87,6 +87,16 @@ public class RecommendationService {
 
     @Transactional
     public RecommendationResponse complete(String userEmail, Long id) {
+        return complete(userEmail, id, null);
+    }
+
+    /**
+     * Completa la recomendacion. Si postIntensity no es nulo se guarda junto a la actividad
+     * completada; omitirlo no impide completarla. La operacion sigue siendo idempotente:
+     * completedAt no cambia en llamadas posteriores.
+     */
+    @Transactional
+    public RecommendationResponse complete(String userEmail, Long id, Integer postIntensity) {
         User user = findActiveUser(userEmail);
         ActivityRecommendation recommendation = recommendationRepository.findByIdAndUserWithDetails(id, user)
                 .orElseThrow(() -> {
@@ -99,7 +109,11 @@ public class RecommendationService {
                 });
 
         recommendation.complete();
-        log.info("Recommendation id={} completed by user id={}", recommendation.getId(), user.getId());
+        if (postIntensity != null) {
+            recommendation.recordPostIntensity(postIntensity);
+        }
+        log.info("Recommendation id={} completed by user id={} withPostIntensity={}",
+                recommendation.getId(), user.getId(), postIntensity != null);
         return toResponse(recommendation);
     }
 
@@ -218,7 +232,9 @@ public class RecommendationService {
                 recommendation.getCreatedAt(),
                 recommendation.getCompletedAt(),
                 recommendation.getHelpfulnessRating(),
-                recommendation.getFeedbackComment()
+                recommendation.getFeedbackComment(),
+                recommendation.getCheckin().getIntensity(),
+                recommendation.getPostIntensity()
         );
     }
 

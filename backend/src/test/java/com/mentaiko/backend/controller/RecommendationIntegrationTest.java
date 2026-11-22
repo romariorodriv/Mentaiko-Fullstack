@@ -278,6 +278,117 @@ class RecommendationIntegrationTest {
     }
 
     @Test
+    void completeWithPostIntensityStoresItNextToTheCheckinIntensity() throws Exception {
+        User user = saveUser("post-intensity-owner@example.com");
+        Emotion emotion = saveEmotion("Ansiedad", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Respirar", true);
+        ActivityRecommendation recommendation = saveRecommendation(user, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/complete", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"postIntensity\":2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completedAt").exists())
+                .andExpect(jsonPath("$.preIntensity").value(4))
+                .andExpect(jsonPath("$.postIntensity").value(2));
+
+        ActivityRecommendation saved = recommendationRepository.findById(recommendation.getId()).orElseThrow();
+        assertThat(saved.getPostIntensity()).isEqualTo(2);
+
+        mockMvc.perform(get("/api/recommendations/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].preIntensity").value(4))
+                .andExpect(jsonPath("$[0].postIntensity").value(2));
+    }
+
+    @Test
+    void completeWithoutPostIntensityIsStillAllowed() throws Exception {
+        User user = saveUser("post-intensity-omitted@example.com");
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Estirar", true);
+        ActivityRecommendation withEmptyJson = saveRecommendation(user, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/complete", withEmptyJson.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.completedAt").exists())
+                .andExpect(jsonPath("$.preIntensity").value(4))
+                .andExpect(jsonPath("$.postIntensity").doesNotExist());
+
+        assertThat(recommendationRepository.findById(withEmptyJson.getId()).orElseThrow().getPostIntensity())
+                .isNull();
+    }
+
+    @Test
+    void postIntensityOutsideOneToFiveIsRejectedAndActivityStaysPending() throws Exception {
+        User user = saveUser("post-intensity-invalid@example.com");
+        Emotion emotion = saveEmotion("Estres", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Caminar", true);
+        ActivityRecommendation recommendation = saveRecommendation(user, checkin, activity);
+
+        for (String body : new String[] {"{\"postIntensity\":0}", "{\"postIntensity\":6}"}) {
+            mockMvc.perform(post("/api/recommendations/{id}/complete", recommendation.getId())
+                            .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(body))
+                    .andExpect(status().isBadRequest());
+        }
+
+        ActivityRecommendation saved = recommendationRepository.findById(recommendation.getId()).orElseThrow();
+        assertThat(saved.getCompletedAt()).isNull();
+        assertThat(saved.getPostIntensity()).isNull();
+    }
+
+    @Test
+    void postIntensityCanBeAddedLaterWithoutChangingCompletionTime() throws Exception {
+        User user = saveUser("post-intensity-later@example.com");
+        Emotion emotion = saveEmotion("Tristeza", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity activity = saveActivity("Escribir", true);
+        ActivityRecommendation recommendation = saveCompletedRecommendation(user, checkin, activity);
+        java.time.LocalDateTime completedAt = recommendationRepository.findById(recommendation.getId())
+                .orElseThrow()
+                .getCompletedAt();
+
+        mockMvc.perform(post("/api/recommendations/{id}/complete", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"postIntensity\":3}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.postIntensity").value(3));
+
+        ActivityRecommendation saved = recommendationRepository.findById(recommendation.getId()).orElseThrow();
+        assertThat(saved.getPostIntensity()).isEqualTo(3);
+        assertThat(saved.getCompletedAt()).isEqualTo(completedAt);
+    }
+
+    @Test
+    void otherUserCannotStorePostIntensity() throws Exception {
+        User owner = saveUser("post-intensity-real-owner@example.com");
+        User other = saveUser("post-intensity-other@example.com");
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry checkin = saveCheckin(owner, emotion);
+        MicroActivity activity = saveActivity("Respirar", true);
+        ActivityRecommendation recommendation = saveRecommendation(owner, checkin, activity);
+
+        mockMvc.perform(post("/api/recommendations/{id}/complete", recommendation.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(other))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"postIntensity\":2}"))
+                .andExpect(status().isNotFound());
+
+        assertThat(recommendationRepository.findById(recommendation.getId()).orElseThrow().getPostIntensity())
+                .isNull();
+    }
+
+    @Test
     void feedbackRequiresToken() throws Exception {
         mockMvc.perform(post("/api/recommendations/1/feedback")
                         .contentType(MediaType.APPLICATION_JSON)

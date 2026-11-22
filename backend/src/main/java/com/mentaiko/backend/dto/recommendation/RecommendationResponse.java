@@ -11,6 +11,8 @@ public record RecommendationResponse(
         LocalDateTime createdAt,
         LocalDateTime completedAt,
         Integer helpfulnessRating,
-        String feedbackComment
+        String feedbackComment,
+        Integer preIntensity,
+        Integer postIntensity
 ) {
 }
