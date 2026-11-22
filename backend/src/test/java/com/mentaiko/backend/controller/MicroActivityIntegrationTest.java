@@ -27,6 +27,7 @@ import com.mentaiko.backend.enums.Role;
 import com.mentaiko.backend.repository.MicroActivityRepository;
 import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.EmotionActivityRuleRepository;
+import com.mentaiko.backend.repository.EmotionalEntryRepository;
 import com.mentaiko.backend.repository.UserRepository;
 import com.mentaiko.backend.security.JwtService;
 import com.mentaiko.backend.service.MicroActivityService;
@@ -49,6 +50,9 @@ class MicroActivityIntegrationTest {
     private EmotionActivityRuleRepository ruleRepository;
 
     @Autowired
+    private EmotionalEntryRepository emotionalEntryRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -64,6 +68,7 @@ class MicroActivityIntegrationTest {
     void setUp() {
         recommendationRepository.deleteAll();
         ruleRepository.deleteAll();
+        emotionalEntryRepository.deleteAll();
         microActivityRepository.deleteAll();
         userRepository.deleteAll();
     }
