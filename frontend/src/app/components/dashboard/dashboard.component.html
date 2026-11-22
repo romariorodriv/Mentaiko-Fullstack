@@ -1,0 +1,82 @@
+<header class="page-head">
+      <div>
+        <span class="eyebrow">TU RESUMEN</span>
+        <h1>Hola, {{ firstName() }}</h1>
+        <p>Una mirada amable a tu semana, sin juicios.</p>
+      </div>
+      <a class="btn primary" routerLink="/app/checkins">+ Nuevo check-in</a>
+    </header>
+
+    @if (loading()) {
+      <div class="loading-panel">Cargando tu resumen...</div>
+    } @else if (error()) {
+      <div class="alert error">{{ error() }} <button (click)="load()">Reintentar</button></div>
+    } @else {
+      <section class="metric-grid">
+        <article class="metric">
+          <span>Registros esta semana</span>
+          <strong>{{ total() }}</strong>
+          <small>Tu constancia construye perspectiva</small>
+        </article>
+        <article class="metric">
+          <span>Intensidad promedio</span>
+          <strong>{{ average() }}<i>/5</i></strong>
+          <small>Es informacion, no una calificacion</small>
+        </article>
+        <article class="metric">
+          <span>Emocion mas frecuente</span>
+          <strong class="word">{{ topEmotion() }}</strong>
+          <small>Basado en tus registros</small>
+        </article>
+      </section>
+
+      <section class="dashboard-grid">
+        <app-weekly-goal-card />
+        <article class="panel span-2">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">EVOLUCION SEMANAL</span>
+              <h2>Tu intensidad por dia</h2>
+            </div>
+            <input type="week" [(ngModel)]="week" (change)="load()">
+          </div>
+          <div class="bars">
+            @for (point of weekly(); track point.label) {
+              <div class="bar-item">
+                <span class="bar-value">{{ point.averageIntensity | number:'1.0-1' }}</span>
+                <div class="bar-track"><i [style.height.%]="point.averageIntensity * 20"></i></div>
+                <small>{{ point.label }}</small>
+              </div>
+            }
+          </div>
+        </article>
+
+        <article class="panel">
+          <span class="eyebrow">DISTRIBUCION</span>
+          <h2>Emociones</h2>
+          <div class="distribution">
+            @for (item of emotions(); track item.label) {
+              <div>
+                <span>{{ item.label }}</span>
+                <b>{{ item.percentage | number:'1.0-0' }}%</b>
+                <i><em [style.width.%]="item.percentage"></em></i>
+              </div>
+            } @empty {
+              <div class="empty">
+                <b>Sin datos</b>
+                <p>Crea check-ins para ver tu distribucion emocional.</p>
+              </div>
+            }
+          </div>
+        </article>
+      </section>
+
+      <aside class="care-note">
+        <span>*</span>
+        <div>
+          <b>Una pausa tambien cuenta</b>
+          <p>Los patrones son una herramienta de reflexion, no un diagnostico. Avanza a tu ritmo.</p>
+        </div>
+        <a routerLink="/app/actividades">Ver microactividades -></a>
+      </aside>
+    }
