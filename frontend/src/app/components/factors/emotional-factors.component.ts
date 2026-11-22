@@ -7,48 +7,8 @@ import {EmotionalFactorsApi, EmotionalFactor, FactorSummary, FactorEmotion} from
 
 @Component({
  selector:'app-emotional-factors',standalone:true,imports:[FormsModule],
- template:`
- <header class="page-head"><div><span class="eyebrow">AUTOCONOCIMIENTO</span>
- <h1>Factores de mis emociones</h1>
- <p>Identifica circunstancias que coinciden con tus emociones. Estas asociaciones no indican causas ni son un diagnóstico.</p></div></header>
- <section class="panel">
-   <h2>Asociar factores a un check-in</h2>
-   @if(loading()){<p role="status">Cargando registros...</p>}
-   @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
-   @if(!loading()){
-     <label>Registro emocional
-       <select name="entry" [ngModel]="selectedId()" (ngModelChange)="selectCheckin($event)">
-       <option [ngValue]="null">Selecciona un check-in</option>
-       @for(item of checkins();track item.id){
-         <option [ngValue]="item.id">{{item.createdAt.slice(0,10)}} · {{item.emotion.name}} · {{item.context}}</option>
-       }
-       </select>
-     </label>
-     @if(selectedId()!==null){
-       <fieldset><legend>Elige hasta cinco factores</legend>
-       @for(factor of catalog();track factor.id){
-         <label><input type="checkbox" [checked]="selectedFactors().includes(factor.id)"
-           (change)="toggle(factor.id,$any($event.target).checked)"> {{factor.label}}</label>
-       }
-       </fieldset>
-       <button class="btn primary" type="button" (click)="save()" [disabled]="busy()">Guardar factores</button>
-       @if(saved()){<p role="status" class="alert success">{{saved()}}</p>}
-     }
-     @if(checkins().length===0){<p>No hay check-ins recientes. Registra primero una emoción.</p>}
-   }
- </section>
- <section class="panel">
-   <h2>Factores frecuentes — últimos 30 días</h2>
-   @if(analysisLoading()){<p role="status">Analizando registros...</p>}
-   @for(item of summary();track item.id){
-     <p>{{item.label}} — {{item.count}} registro{{item.count===1?'':'s'}}</p>
-   } @empty {<p>Sin factores registrados en este período.</p>}
-   <h3>Factores y emociones registradas</h3>
-   @for(item of associations();track item.factor+'-'+item.emotion){
-     <p>{{item.factor}} · {{item.emotion}}: {{item.count}} registro{{item.count===1?'':'s'}}</p>
-   } @empty {<p>No hay asociaciones suficientes para este período.</p>}
-   <small>Estas coincidencias no demuestran que un factor provoque una emoción. No se analizan notas privadas.</small>
- </section>`
+ templateUrl: './emotional-factors.component.html',
+  styleUrl: './emotional-factors.component.css'
 })
 export class EmotionalFactorsComponent implements OnInit {
  private readonly api=inject(ApiService);
