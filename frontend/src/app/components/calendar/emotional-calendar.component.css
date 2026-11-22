@@ -1,0 +1,11 @@
+.calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.2rem}
+    .calendar-toolbar h2{margin:0;text-align:center}
+    .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem}
+    .calendar-weekday{text-align:center;padding:.4rem 0;font-size:.8rem}
+    .calendar-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;min-height:4rem;border:1px solid #ccd3dd;border-radius:.6rem;background:transparent;cursor:pointer;font:inherit}
+    .calendar-day small{font-size:.7rem;text-align:center}
+    .calendar-day.selected{outline:2px solid #4168a2}
+    .calendar-day:focus-visible{outline:3px solid #4168a2}
+    .calendar-detail{margin-top:1.2rem;border-top:1px solid #ccd3dd;padding-top:1rem}
+    .calendar-entry{padding:.8rem;border-bottom:1px solid #ccd3dd}
+    @media(max-width:600px){.calendar-grid{gap:.1rem}.calendar-day{min-height:3.2rem;padding:.1rem}.calendar-day small{font-size:.6rem}}

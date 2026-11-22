@@ -12,72 +12,9 @@ interface CalendarMonth {year: number; month: number; days: CalendarDay[]}
 @Component({
   selector: 'app-emotional-calendar',
   standalone: true,
-  template: `
-  <header class="page-head"><div><span class="eyebrow">TU HISTORIA</span>
-    <h1>Calendario emocional</h1>
-    <p>Revisa los días en los que registraste cómo te sentías.</p></div></header>
-  <section class="panel">
-    <div class="calendar-toolbar">
-      <button type="button" class="btn" (click)="changeMonth(-1)" aria-label="Mes anterior">←</button>
-      <h2 aria-live="polite">{{monthLabel()}}</h2>
-      <button type="button" class="btn" (click)="changeMonth(1)" aria-label="Mes siguiente">→</button>
-    </div>
-    @if(loading()) {<p role="status">Cargando calendario...</p>}
-    @if(error()) {<p class="alert error" role="alert">{{error()}} <button (click)="load()">Reintentar</button></p>}
-    <div class="calendar-grid" role="group" aria-label="Días del mes">
-      @for(label of weekdays; track label) {<strong class="calendar-weekday">{{label}}</strong>}
-      @for(cell of cells(); track $index) {
-        @if(cell) {
-          <button type="button" class="calendar-day" [class.selected]="selected()?.date===cell.date"
-                  (click)="select(cell.date)" [attr.aria-label]="dayLabel(cell)"
-                  [attr.aria-pressed]="selected()?.date===cell.date">
-            <span>{{dayNumber(cell.date)}}</span>
-            @if(cell.total>0){<small>{{cell.total}} registro{{cell.total===1?'':'s'}}</small>}
-          </button>
-        } @else {<span aria-hidden="true"></span>}
-      }
-    </div>
-    @if(selected(); as day) {
-      <section class="calendar-detail" aria-live="polite">
-        <h3>{{day.date}}</h3>
-        @if(day.total===0){<p>No hay registros emocionales en este día.</p>}
-        @for(item of day.emotions; track item.emotionId){
-          <p>{{item.emotion}}: {{item.count}} registro{{item.count===1?'':'s'}}</p>
-        }
-        @if(detailLoading()){<p role="status">Cargando registros del día...</p>}
-        @if(detailError()){<p class="alert error" role="alert">{{detailError()}}</p>}
-        @for(checkin of detailEntries();track checkin.id){
-          <article class="calendar-entry">
-            <strong>{{checkin.emotion.name}} · {{checkin.intensity}}/5</strong>
-            <p>{{checkin.context}}</p>
-            @if(checkin.note){<p>{{checkin.note}}</p>}
-            <small>{{checkin.createdAt}}</small>
-          </article>
-        }
-        @if(detailPages()>1){
-          <div class="calendar-toolbar">
-            <button class="btn" type="button" (click)="loadEntries(detailPage()-1)" [disabled]="detailPage()===0 || detailLoading()">Anterior</button>
-            <span>Página {{detailPage()+1}} de {{detailPages()}}</span>
-            <button class="btn" type="button" (click)="loadEntries(detailPage()+1)" [disabled]="detailPage()+1>=detailPages() || detailLoading()">Siguiente</button>
-          </div>
-        }
-      </section>
-    }
-  </section>
-  `,
-  styles: [`
-    .calendar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.2rem}
-    .calendar-toolbar h2{margin:0;text-align:center}
-    .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:.35rem}
-    .calendar-weekday{text-align:center;padding:.4rem 0;font-size:.8rem}
-    .calendar-day{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.3rem;min-height:4rem;border:1px solid #ccd3dd;border-radius:.6rem;background:transparent;cursor:pointer;font:inherit}
-    .calendar-day small{font-size:.7rem;text-align:center}
-    .calendar-day.selected{outline:2px solid #4168a2}
-    .calendar-day:focus-visible{outline:3px solid #4168a2}
-    .calendar-detail{margin-top:1.2rem;border-top:1px solid #ccd3dd;padding-top:1rem}
-    .calendar-entry{padding:.8rem;border-bottom:1px solid #ccd3dd}
-    @media(max-width:600px){.calendar-grid{gap:.1rem}.calendar-day{min-height:3.2rem;padding:.1rem}.calendar-day small{font-size:.6rem}}
-  `]
+  templateUrl: './emotional-calendar.component.html',
+  styleUrl: './emotional-calendar.component.css',
+  
 })
 export class EmotionalCalendarComponent implements OnInit {
   private readonly http=inject(HttpClient);
