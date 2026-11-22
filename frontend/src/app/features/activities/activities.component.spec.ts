@@ -118,4 +118,97 @@ describe('ActivitiesComponent', () => {
       expect(component.feedbackBusyId()).toBeNull();
     });
   });
+
+  describe('comparacion antes y despues (HU-28)', () => {
+    it('completes with the selected post intensity and stores the comparison', () => {
+      const fixture = createWith([recommendation({ id: 20, completedAt: undefined, preIntensity: 4 })]);
+      const component = fixture.componentInstance;
+      const item = component.recommendations()[0];
+
+      component.selectPost(item, 2);
+      component.complete(item);
+
+      const request = http.expectOne('/api/recommendations/20/complete');
+      expect(request.request.method).toBe('POST');
+      expect(request.request.body).toEqual({ postIntensity: 2 });
+      request.flush(recommendation({ id: 20, preIntensity: 4, postIntensity: 2 }));
+
+      const updated = component.recommendations()[0];
+      expect(updated.postIntensity).toBe(2);
+      expect(component.currentPost(updated)).toBe(0);
+      expect(component.comparisonText(updated)).toContain('de 4 a 2');
+    });
+
+    it('lets the user complete without a post intensity', () => {
+      const fixture = createWith([recommendation({ id: 21, completedAt: undefined, preIntensity: 3 })]);
+      const component = fixture.componentInstance;
+
+      component.complete(component.recommendations()[0]);
+
+      const request = http.expectOne('/api/recommendations/21/complete');
+      expect(request.request.body).toEqual({});
+      request.flush(recommendation({ id: 21, preIntensity: 3 }));
+
+      expect(component.recommendations()[0].completedAt).toBeTruthy();
+      expect(component.recommendations()[0].postIntensity).toBeFalsy();
+    });
+
+    it('clears the selected intensity when the same level is chosen twice', () => {
+      const fixture = createWith([recommendation({ id: 22, completedAt: undefined })]);
+      const component = fixture.componentInstance;
+      const item = component.recommendations()[0];
+
+      component.selectPost(item, 5);
+      expect(component.currentPost(item)).toBe(5);
+      component.selectPost(item, 5);
+      expect(component.currentPost(item)).toBe(0);
+    });
+
+    it('shows the before and after values on a completed activity', () => {
+      const fixture = createWith([recommendation({ preIntensity: 4, postIntensity: 2 })]);
+      const compare: HTMLElement = fixture.nativeElement.querySelector('.activity-compare');
+
+      expect(compare).not.toBeNull();
+      expect(compare.textContent).toContain('Antes');
+      expect(compare.textContent).toContain('4/5');
+      expect(compare.textContent).toContain('Despues');
+      expect(compare.textContent).toContain('2/5');
+      expect(compare.textContent).toContain('no es una evaluacion clinica');
+      expect(fixture.nativeElement.querySelector('.activity-post')).toBeNull();
+    });
+
+    it('does not show a comparison when no post intensity was registered', () => {
+      const fixture = createWith([recommendation({ preIntensity: 4 })]);
+
+      expect(fixture.nativeElement.querySelector('.activity-compare')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.activity-post')).not.toBeNull();
+    });
+
+    it('adds the post intensity later to an already completed activity', () => {
+      const fixture = createWith([recommendation({ id: 23, preIntensity: 5 })]);
+      const component = fixture.componentInstance;
+      const item = component.recommendations()[0];
+
+      component.savePostIntensity(item);
+      http.expectNone('/api/recommendations/23/complete');
+
+      component.selectPost(item, 3);
+      component.savePostIntensity(item);
+      const request = http.expectOne('/api/recommendations/23/complete');
+      expect(request.request.body).toEqual({ postIntensity: 3 });
+      request.flush(recommendation({ id: 23, preIntensity: 5, postIntensity: 3 }));
+
+      expect(component.recommendations()[0].postIntensity).toBe(3);
+    });
+
+    it('describes lower, equal and higher intensity without clinical language', () => {
+      const fixture = createWith([]);
+      const component = fixture.componentInstance;
+
+      expect(component.comparisonText(recommendation({ preIntensity: 4, postIntensity: 2 }))).toContain('paso de 4 a 2');
+      expect(component.comparisonText(recommendation({ preIntensity: 3, postIntensity: 3 }))).toContain('se mantuvo en 3');
+      expect(component.comparisonText(recommendation({ preIntensity: 2, postIntensity: 4 }))).toContain('subio de 2 a 4');
+      expect(component.comparisonText(recommendation({ preIntensity: 2 }))).toBe('');
+    });
+  });
 });

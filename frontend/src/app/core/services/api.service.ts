@@ -29,7 +29,7 @@ export class ApiService {
   }
   recommend(checkinId: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations`, {checkinId}); }
   recommendations(): Observable<Recommendation[]> { return this.http.get<Recommendation[]>(`${this.base}/recommendations/me`); }
-  completeRecommendation(id: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/complete`, {}); }
+  completeRecommendation(id: number, postIntensity?: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/complete`, postIntensity === undefined ? {} : { postIntensity }); }
   rateRecommendation(id: number, body: RecommendationFeedbackRequest): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/feedback`, body); }
 
   weekly(week: string): Observable<WeeklyPoint[]> { return this.http.get<WeeklyPoint[]>(`${this.base}/reports/weekly`, { params: { week } }); }

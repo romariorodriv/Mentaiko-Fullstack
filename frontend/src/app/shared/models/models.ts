@@ -10,7 +10,7 @@ export interface CheckinRequest { emotionId: number; intensity: number; context:
 export interface MicroActivity { id: number; title: string; description: string; durationMinutes: number; active: boolean; activityType?: string; createdAt: string; updatedAt: string; }
 export interface CreateMicroActivityRequest { title: string; description: string; durationMinutes: number; }
 export interface UpdateMicroActivityRequest { title?: string; description?: string; durationMinutes?: number; active?: boolean; }
-export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; helpfulnessRating?: number | null; feedbackComment?: string | null; }
+export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; helpfulnessRating?: number | null; feedbackComment?: string | null; preIntensity?: number | null; postIntensity?: number | null; }
 export interface RecommendationFeedbackRequest { helpfulnessRating: number; feedbackComment?: string; }
 export interface WeeklyPoint { label: string; count: number; averageIntensity: number; }
 export interface DistributionItem { label: string; count: number; percentage: number; }
