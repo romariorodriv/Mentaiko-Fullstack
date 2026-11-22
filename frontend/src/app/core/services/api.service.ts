@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AdminCheckin, AdminDashboard, AdminIndicators, AdminUser, Checkin, CheckinRequest, CreateMicroActivityRequest, DistributionItem, Emotion, MicroActivity, PageResponse, Recommendation, UpdateMicroActivityRequest, WeeklyPoint } from '../../shared/models/models';
+import { AdminCheckin, AdminDashboard, AdminIndicators, AdminUser, Checkin, CheckinRequest, CreateMicroActivityRequest, DistributionItem, Emotion, MicroActivity, PageResponse, Recommendation, RecommendationFeedbackRequest, UpdateMicroActivityRequest, WeeklyPoint } from '../../shared/models/models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -29,7 +29,8 @@ export class ApiService {
   }
   recommend(checkinId: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations`, {checkinId}); }
   recommendations(): Observable<Recommendation[]> { return this.http.get<Recommendation[]>(`${this.base}/recommendations/me`); }
-  completeRecommendation(id: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/complete`, {}); }
+  completeRecommendation(id: number, postIntensity?: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/complete`, postIntensity === undefined ? {} : { postIntensity }); }
+  rateRecommendation(id: number, body: RecommendationFeedbackRequest): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/feedback`, body); }
 
   weekly(week: string): Observable<WeeklyPoint[]> { return this.http.get<WeeklyPoint[]>(`${this.base}/reports/weekly`, { params: { week } }); }
   distribution(from?: string, to?: string): Observable<{ emotions: DistributionItem[]; contexts: DistributionItem[] }> {

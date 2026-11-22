@@ -50,6 +50,15 @@ public class ActivityRecommendation {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
+    @Column(name = "helpfulness_rating")
+    private Integer helpfulnessRating;
+
+    @Column(name = "feedback_comment", length = 300)
+    private String feedbackComment;
+
+    @Column(name = "post_intensity")
+    private Integer postIntensity;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -115,6 +124,29 @@ public class ActivityRecommendation {
             completed = true;
             completedAt = LocalDateTime.now();
         }
+    }
+
+    public Integer getPostIntensity() {
+        return postIntensity;
+    }
+
+    /** Registra la intensidad posterior (1 a 5) que percibe la persona; es opcional. */
+    public void recordPostIntensity(Integer postIntensity) {
+        this.postIntensity = postIntensity;
+    }
+
+    public Integer getHelpfulnessRating() {
+        return helpfulnessRating;
+    }
+
+    public String getFeedbackComment() {
+        return feedbackComment;
+    }
+
+    /** Guarda la valoración de utilidad; solo tiene sentido sobre una actividad completada. */
+    public void rate(int rating, String comment) {
+        this.helpfulnessRating = rating;
+        this.feedbackComment = comment;
     }
 
     public LocalDateTime getCreatedAt() {
