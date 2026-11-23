@@ -78,7 +78,8 @@ public class RecommendationService {
                 .map(recommendation -> {
                     log.debug("Existing recommendation id={} returned for check-in id={}",
                             recommendation.getId(), checkinId);
-                    if (maxDurationMinutes != null && recommendation.getActivity().getDurationMinutes() > maxDurationMinutes) {
+                    if (maxDurationMinutes != null && !recommendation.isFallbackUsed()
+                            && recommendation.getActivity().getDurationMinutes() > maxDurationMinutes) {
                         throw new ResponseStatusException(HttpStatus.CONFLICT,
                                 "Este check-in ya tiene una recomendacion de mayor duracion; conserva la recomendacion original");
                     }
@@ -171,7 +172,11 @@ public class RecommendationService {
         recommendation.setActivity(choice.activity());
         recommendation.setFallbackUsed(choice.fallbackUsed());
         recommendation.setReason(choice.fallbackUsed()
-                ? "No hay una regla activa para " + emotion.getName() + "; sugerimos una actividad activa del catalogo."
+                ? (maxDurationMinutes == null
+                    ? "No hay una regla activa para " + emotion.getName() + "; sugerimos una actividad activa del catalogo."
+                    : "No existe una regla compatible con " + maxDurationMinutes
+                        + " minutos; sugerimos la microactividad activa mas corta de "
+                        + choice.activity().getDurationMinutes() + " minutos.")
                 : "Recomendacion asociada a la emocion " + emotion.getName() + ".");
 
         ActivityRecommendation savedRecommendation = recommendationRepository.save(recommendation);
@@ -209,9 +214,14 @@ public class RecommendationService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "No hay microactividades activas disponibles");
         }
-        var selected = preferred.isEmpty() ? active.get(0)
-                : active.stream().filter(activity -> preferred.contains(activity.getActivityType()))
-                    .findFirst().orElse(active.get(0));
+        var selected = maxDurationMinutes == null
+                ? (preferred.isEmpty() ? active.get(0)
+                    : active.stream().filter(activity -> preferred.contains(activity.getActivityType()))
+                        .findFirst().orElse(active.get(0)))
+                : active.stream().min(java.util.Comparator
+                    .comparing(MicroActivity::getDurationMinutes)
+                    .thenComparing(MicroActivity::getTitle)
+                    .thenComparing(MicroActivity::getId)).orElseThrow();
         return new ActivityChoice(selected, true);
     }
 
