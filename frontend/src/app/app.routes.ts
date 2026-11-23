@@ -20,6 +20,7 @@ export const routes: Routes = [
     {path: 'energia', loadComponent: () => import('./features/energy/energy.component').then(m => m.EnergyComponent)},
     {path: 'checkins', loadComponent: () => import('./features/checkins/checkins.component').then(m => m.CheckinsComponent)},
     {path: 'actividades', loadComponent: () => import('./features/activities/activities.component').then(m => m.ActivitiesComponent)},
+    {path: 'historial-actividades', loadComponent: () => import('./features/activity-history/activity-history.component').then(m => m.ActivityHistoryComponent)},
     {path: 'perfil', loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent)},
     {path: 'admin/dashboard', canActivate: [adminGuard], loadComponent: () => import('./features/admin/dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)},
     {path: 'admin/emociones', canActivate: [adminGuard], loadComponent: () => import('./features/admin/emotions/admin-emotions.component').then(m => m.AdminEmotionsComponent)},
