@@ -13,6 +13,14 @@ export class ActivitiesComponent implements OnInit {
   readonly activities = signal<MicroActivity[]>([]);
   readonly recommendations = signal<Recommendation[]>([]);
   readonly loading = signal(true);
+  readonly availableMinutes = signal<number | null>(null);
+  readonly quickMinutes = [2, 5, 10] as const;
+
+  filterByMinutes(minutes: number | null): void {
+    this.availableMinutes.set(minutes);
+    this.load();
+  }
+
   readonly busyId = signal<number | null>(null);
   readonly feedbackBusyId = signal<number | null>(null);
   readonly stars = [1, 2, 3, 4, 5];
@@ -32,7 +40,7 @@ export class ActivitiesComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
     this.success.set('');
-    this.activitiesApi.activities(true).subscribe({
+    this.activitiesApi.activities(true, this.availableMinutes() ?? undefined).subscribe({
       next: activities => {
         this.activities.set(activities);
         this.loadRecommendations();
