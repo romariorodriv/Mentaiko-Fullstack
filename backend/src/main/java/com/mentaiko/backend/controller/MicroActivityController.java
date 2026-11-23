@@ -44,6 +44,11 @@ public class MicroActivityController {
         return microActivityService.list(activeOnly || !admin);
     }
 
+    @GetMapping("/api/micro-activities/favorites")
+    public List<FavoriteMicroActivityResponse> myFavorites(Authentication authentication) {
+        return favoriteService.listMine(authentication.getName());
+    }
+
     @PostMapping("/api/micro-activities/{id}/favorite")
     public FavoriteMicroActivityResponse favorite(@PathVariable Long id, Authentication authentication) {
         return favoriteService.save(authentication.getName(), id);

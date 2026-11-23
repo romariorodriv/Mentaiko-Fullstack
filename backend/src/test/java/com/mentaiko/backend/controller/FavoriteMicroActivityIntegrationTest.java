@@ -2,6 +2,8 @@ package com.mentaiko.backend.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -96,6 +98,32 @@ class FavoriteMicroActivityIntegrationTest {
         mvc.perform(delete("/api/micro-activities/{id}/favorite", item.getId())
                 .header(HttpHeaders.AUTHORIZATION, token(other))).andExpect(status().isNoContent());
         assertThat(favorites.existsByUser_IdAndActivity_Id(owner.getId(), item.getId())).isTrue();
+    }
+
+    @Test
+    void listingOnlyReturnsCurrentUsersFavorites() throws Exception {
+        User first = user("first-favorites@example.com");
+        User second = user("second-favorites@example.com");
+        MicroActivity own = activity("Dormir", true);
+        MicroActivity other = activity("Pasear", true);
+        mvc.perform(post("/api/micro-activities/{id}/favorite", own.getId())
+                .header(HttpHeaders.AUTHORIZATION, token(first))).andExpect(status().isOk());
+        mvc.perform(post("/api/micro-activities/{id}/favorite", other.getId())
+                .header(HttpHeaders.AUTHORIZATION, token(second))).andExpect(status().isOk());
+
+        mvc.perform(get("/api/micro-activities/favorites"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/micro-activities/favorites")
+                .header(HttpHeaders.AUTHORIZATION, token(first)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(own.getId()))
+                .andExpect(jsonPath("$[0].title").value("Dormir"));
+        mvc.perform(get("/api/micro-activities/favorites")
+                .header(HttpHeaders.AUTHORIZATION, token(second)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value(other.getId()));
     }
 
     private MicroActivity activity(String title, boolean active) {
