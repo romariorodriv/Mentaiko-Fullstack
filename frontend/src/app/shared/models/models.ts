@@ -12,6 +12,25 @@ export interface CreateMicroActivityRequest { title: string; description: string
 export interface UpdateMicroActivityRequest { title?: string; description?: string; durationMinutes?: number; active?: boolean; }
 export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; helpfulnessRating?: number | null; feedbackComment?: string | null; preIntensity?: number | null; postIntensity?: number | null; }
 export interface RecommendationFeedbackRequest { helpfulnessRating: number; feedbackComment?: string; }
+export interface GuidedMicroActivity {
+  id: number;
+  title: string;
+  durationMinutes: number;
+  steps: { title: string; instruction: string }[];
+}
+export interface ConfirmFocusSessionRequest {
+  requestId: string;
+  activityId: number;
+  recommendationId?: number;
+  durationSeconds: number;
+}
+export interface FocusSession {
+  id: number;
+  activityId: number;
+  recommendationId: number | null;
+  durationSeconds: number;
+  completedAt: string;
+}
 export interface WeeklyPoint { label: string; count: number; averageIntensity: number; }
 export interface DistributionItem { label: string; count: number; percentage: number; }
 export interface AdminIndicators { totalUsers: number; activeUsers: number; totalCheckins: number; emotionDistribution: DistributionItem[]; recommendationsGenerated: number; recommendationsCompleted: number; completionRate: number; mostFrequentEmotion: string; }

@@ -1,11 +1,13 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { ActivitiesService } from '../../core/services/activities.service';
 import { RecommendationsService } from '../../core/services/recommendations.service';
-import { MicroActivity, Recommendation } from '../../shared/models/models';
+import { FocusSession, GuidedMicroActivity, MicroActivity, Recommendation } from '../../shared/models/models';
+import { GuidedActivityComponent } from '../guided-activity/guided-activity.component';
 
 @Component({
   selector: 'app-activities',
   standalone: true,
+  imports: [GuidedActivityComponent],
   templateUrl: './activities.component.html',
   styleUrl: './activities.component.css'
 })
@@ -15,6 +17,8 @@ export class ActivitiesComponent implements OnInit {
   readonly loading = signal(true);
   readonly busyId = signal<number | null>(null);
   readonly feedbackBusyId = signal<number | null>(null);
+  readonly guideLoading = signal(false);
+  readonly guide = signal<{ activity: GuidedMicroActivity; recommendationId?: number } | null>(null);
   readonly stars = [1, 2, 3, 4, 5];
   private readonly ratingDrafts = signal<Record<number, number>>({});
   private readonly commentDrafts = signal<Record<number, string>>({});
@@ -55,6 +59,29 @@ export class ActivitiesComponent implements OnInit {
         this.error.set('No se pudieron cargar tus recomendaciones.');
       }
     });
+  }
+
+  openGuide(activityId: number, recommendationId?: number): void {
+    if (this.guideLoading() || this.guide()) return;
+
+    this.error.set('');
+    this.guideLoading.set(true);
+    this.activitiesApi.activityGuide(activityId).subscribe({
+      next: activity => {
+        this.guideLoading.set(false);
+        this.guide.set({ activity, recommendationId });
+      },
+      error: failure => {
+        this.guideLoading.set(false);
+        this.error.set(failure.error?.message ?? 'No se pudo abrir el modo guiado.');
+      }
+    });
+  }
+
+  onFocusSessionRecorded(session: FocusSession): void {
+    if (session.recommendationId !== null) {
+      this.loadRecommendations();
+    }
   }
 
   complete(recommendation: Recommendation): void {

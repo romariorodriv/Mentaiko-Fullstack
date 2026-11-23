@@ -46,6 +46,20 @@ describe('ActivitiesComponent', () => {
 
   afterEach(() => http.verify());
 
+  it('opens the guide for a recommended activity using the duration from its detail endpoint', () => {
+    const fixture = createWith([recommendation({ completedAt: undefined })]);
+    const button: HTMLButtonElement = fixture.nativeElement.querySelector('.activity-row .guide-launch');
+    button.click();
+    http.expectOne('/api/micro-activities/1').flush({
+      id: 1, title: activity.title, durationMinutes: 3,
+      steps: [{ title: 'Realiza la actividad', instruction: activity.description }]
+    });
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('[role="timer"]').textContent.trim()).toBe('03:00');
+    expect(fixture.componentInstance.guide()?.recommendationId).toBe(10);
+    http.expectNone('/api/focus-sessions');
+  });
+
   describe('valoracion de utilidad (HU-27)', () => {
     it('shows the rating controls only for completed activities', () => {
       const fixture = createWith([

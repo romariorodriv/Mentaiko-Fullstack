@@ -18,4 +18,6 @@ public interface MicroActivityRepository extends JpaRepository<MicroActivity, Lo
     List<MicroActivity> findAllByOrderByTitleAscIdAsc();
 
     Optional<MicroActivity> findFirstByActiveTrueOrderByTitleAscIdAsc();
+
+    Optional<MicroActivity> findByIdAndActiveTrue(Long id);
 }

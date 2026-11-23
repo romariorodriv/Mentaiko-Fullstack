@@ -1,1 +1,4 @@
 /* Los estilos compartidos permanecen en src/styles.css. */
+.guide-launch {
+  margin-block-start: .55rem;
+}

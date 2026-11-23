@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mentaiko.backend.dto.microactivity.CreateMicroActivityRequest;
+import com.mentaiko.backend.dto.microactivity.GuidedMicroActivityResponse;
 import com.mentaiko.backend.dto.microactivity.MicroActivityResponse;
 import com.mentaiko.backend.dto.microactivity.UpdateMicroActivityRequest;
 import com.mentaiko.backend.service.MicroActivityService;
@@ -37,6 +38,11 @@ public class MicroActivityController {
         boolean admin = authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
         return microActivityService.list(activeOnly || !admin);
+    }
+
+    @GetMapping("/api/micro-activities/{id}")
+    public GuidedMicroActivityResponse guide(@PathVariable Long id) {
+        return microActivityService.guide(id);
     }
 
     @PostMapping("/api/admin/micro-activities")

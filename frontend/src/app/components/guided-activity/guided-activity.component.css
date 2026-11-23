@@ -1,0 +1,63 @@
+.guided-activity {
+  margin-block-end: 1rem;
+}
+
+.guide-header,
+.timer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem;
+}
+
+.guide-header {
+  justify-content: space-between;
+  margin-block-end: 1rem;
+}
+
+.guide-content {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.guide-steps {
+  display: grid;
+  gap: .55rem;
+  margin: 0;
+  padding-inline-start: 1.5rem;
+}
+
+.guide-steps li {
+  padding: .55rem .7rem;
+  border-inline-start: 3px solid var(--line);
+}
+
+.guide-steps p {
+  margin: .3rem 0 0;
+}
+
+.guide-steps .current-step {
+  border-inline-start-color: var(--teal);
+  background: var(--mint);
+}
+
+.guide-clock {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 1rem;
+}
+
+.timer {
+  color: var(--teal);
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+}
+
+@media (max-width: 620px) {
+  .guide-content {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

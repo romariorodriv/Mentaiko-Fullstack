@@ -15,6 +15,13 @@
       <div class="alert success">{{ success() }}</div>
     }
 
+    @if (guide(); as currentGuide) {
+      <app-guided-activity [activity]="currentGuide.activity" [recommendationId]="currentGuide.recommendationId"
+        (recorded)="onFocusSessionRecorded($event)" (closed)="guide.set(null)" />
+    } @else if (guideLoading()) {
+      <p class="loading-panel" role="status">Cargando guía de la actividad…</p>
+    }
+
     @if (loading()) {
       <div class="loading-panel">Cargando microactividades...</div>
     } @else {
@@ -30,11 +37,16 @@
                   <h3>{{ recommendation.activity.title }}</h3>
                   <p>{{ recommendation.activity.description }}</p>
                   <small>{{ recommendation.reason }}</small>
+                  @if (!recommendation.completedAt && recommendation.activity.active) {
+                    <button type="button" class="btn secondary guide-launch" (click)="openGuide(recommendation.activity.id, recommendation.id)"
+                            [disabled]="guideLoading() || guide() !== null || busyId() === recommendation.id">Modo guiado</button>
+                  }
                 </div>
                 @if (recommendation.completedAt) {
                   <span class="status-pill done">Completada</span>
                 } @else {
-                  <button class="btn secondary" (click)="complete(recommendation)" [disabled]="busyId() === recommendation.id">
+                  <button class="btn secondary" (click)="complete(recommendation)"
+                          [disabled]="busyId() === recommendation.id || guide()?.recommendationId === recommendation.id">
                     {{ busyId() === recommendation.id ? 'Guardando...' : 'Marcar completa' }}
                   </button>
                 }
@@ -122,6 +134,8 @@
                 <span>{{ activity.durationMinutes }} min</span>
                 <b>{{ activity.title }}</b>
                 <p>{{ activity.description }}</p>
+                <button type="button" class="btn secondary guide-launch" (click)="openGuide(activity.id)"
+                        [disabled]="guideLoading() || guide() !== null">Modo guiado</button>
               </div>
             } @empty {
               <div class="empty activity-empty">
