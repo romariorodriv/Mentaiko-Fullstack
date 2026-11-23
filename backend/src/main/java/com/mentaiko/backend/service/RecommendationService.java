@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.mentaiko.backend.dto.recommendation.RecommendationActivityResponse;
+import com.mentaiko.backend.dto.recommendation.RecommendationFeedbackRequest;
 import com.mentaiko.backend.dto.recommendation.RecommendationResponse;
 import com.mentaiko.backend.entity.ActivityRecommendation;
 import com.mentaiko.backend.entity.Emotion;
@@ -86,6 +87,16 @@ public class RecommendationService {
 
     @Transactional
     public RecommendationResponse complete(String userEmail, Long id) {
+        return complete(userEmail, id, null);
+    }
+
+    /**
+     * Completa la recomendacion. Si postIntensity no es nulo se guarda junto a la actividad
+     * completada; omitirlo no impide completarla. La operacion sigue siendo idempotente:
+     * completedAt no cambia en llamadas posteriores.
+     */
+    @Transactional
+    public RecommendationResponse complete(String userEmail, Long id, Integer postIntensity) {
         User user = findActiveUser(userEmail);
         ActivityRecommendation recommendation = recommendationRepository.findByIdAndUserWithDetails(id, user)
                 .orElseThrow(() -> {
@@ -98,7 +109,43 @@ public class RecommendationService {
                 });
 
         recommendation.complete();
-        log.info("Recommendation id={} completed by user id={}", recommendation.getId(), user.getId());
+        if (postIntensity != null) {
+            recommendation.recordPostIntensity(postIntensity);
+        }
+        log.info("Recommendation id={} completed by user id={} withPostIntensity={}",
+                recommendation.getId(), user.getId(), postIntensity != null);
+        return toResponse(recommendation);
+    }
+
+    @Transactional
+    public RecommendationResponse submitFeedback(
+            String userEmail,
+            Long id,
+            RecommendationFeedbackRequest request
+    ) {
+        User user = findActiveUser(userEmail);
+        ActivityRecommendation recommendation = recommendationRepository.findByIdAndUserWithDetails(id, user)
+                .orElseThrow(() -> {
+                    log.warn("Recommendation feedback rejected for id={} and user id={} because recommendation was not found or is not owned by user",
+                            id, user.getId());
+                    return new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Recomendacion no encontrada"
+                    );
+                });
+
+        if (!recommendation.isCompleted()) {
+            log.warn("Recommendation feedback rejected for id={} and user id={} because the activity is not completed",
+                    id, user.getId());
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Primero debes realizar la actividad para poder valorarla"
+            );
+        }
+
+        String comment = request.feedbackComment() == null ? null : request.feedbackComment().strip();
+        recommendation.rate(request.helpfulnessRating(), comment == null || comment.isEmpty() ? null : comment);
+        log.info("Recommendation id={} rated by user id={}", recommendation.getId(), user.getId());
         return toResponse(recommendation);
     }
 
@@ -183,7 +230,11 @@ public class RecommendationService {
                 recommendation.getReason(),
                 recommendation.isFallbackUsed(),
                 recommendation.getCreatedAt(),
-                recommendation.getCompletedAt()
+                recommendation.getCompletedAt(),
+                recommendation.getHelpfulnessRating(),
+                recommendation.getFeedbackComment(),
+                recommendation.getCheckin().getIntensity(),
+                recommendation.getPostIntensity()
         );
     }
 

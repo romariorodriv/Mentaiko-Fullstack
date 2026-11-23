@@ -1,4 +1,5 @@
-<div class="app-shell">
+
+  <div class="app-shell">
     <aside class="sidebar" [class.open]="menuOpen()">
       <a class="brand" routerLink="/app/dashboard" (click)="menuOpen.set(false)"><img class="brand-logo" src="/branding/mentaiko-logo.svg" alt="Mentaiko"></a>
       <nav>
@@ -13,6 +14,7 @@
         <a routerLink="/app/energia" routerLinkActive="active" (click)="menuOpen.set(false)">Mi energía</a>
         <a routerLink="/app/checkins" routerLinkActive="active" (click)="menuOpen.set(false)"><span>♡</span> Mis check-ins</a>
         <a routerLink="/app/actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span>◉</span> Microactividades</a>
+        <a routerLink="/app/historial-actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span>▤</span> Mi historial de actividades</a>
         <a routerLink="/app/perfil" routerLinkActive="active" (click)="menuOpen.set(false)"><span>○</span> Mi perfil</a>
         @if (auth.role() === 'ADMIN') {
           <p class="nav-caption">ADMINISTRACIÓN</p>

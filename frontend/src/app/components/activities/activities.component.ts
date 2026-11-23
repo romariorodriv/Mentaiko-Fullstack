@@ -14,6 +14,11 @@ export class ActivitiesComponent implements OnInit {
   readonly recommendations = signal<Recommendation[]>([]);
   readonly loading = signal(true);
   readonly busyId = signal<number | null>(null);
+  readonly feedbackBusyId = signal<number | null>(null);
+  readonly stars = [1, 2, 3, 4, 5];
+  private readonly ratingDrafts = signal<Record<number, number>>({});
+  private readonly commentDrafts = signal<Record<number, string>>({});
+  private readonly postDrafts = signal<Record<number, number>>({});
   readonly error = signal('');
   readonly success = signal('');
 
@@ -60,15 +65,125 @@ export class ActivitiesComponent implements OnInit {
     this.busyId.set(recommendation.id);
     this.error.set('');
     this.success.set('');
-    this.recommendationsApi.completeRecommendation(recommendation.id).subscribe({
+    const postIntensity = this.currentPost(recommendation) || undefined;
+    this.recommendationsApi.completeRecommendation(recommendation.id, postIntensity).subscribe({
       next: updated => {
         this.busyId.set(null);
         this.success.set(`Microactividad "${updated.activity.title}" completada.`);
         this.recommendations.update(items => items.map(item => item.id === updated.id ? updated : item));
+        this.clearPostDraft(updated.id);
       },
       error: () => {
         this.busyId.set(null);
         this.error.set('No se pudo completar la recomendacion.');
+      }
+    });
+  }
+
+  currentPost(recommendation: Recommendation): number {
+    return this.postDrafts()[recommendation.id] ?? 0;
+  }
+
+  /** Elegir de nuevo la misma intensidad la quita, porque indicarla es opcional. */
+  selectPost(recommendation: Recommendation, level: number): void {
+    if (this.currentPost(recommendation) === level) {
+      this.clearPostDraft(recommendation.id);
+      return;
+    }
+    this.postDrafts.update(drafts => ({ ...drafts, [recommendation.id]: level }));
+  }
+
+  savePostIntensity(recommendation: Recommendation): void {
+    const level = this.currentPost(recommendation);
+    if (level < 1 || this.busyId() !== null) {
+      return;
+    }
+
+    this.busyId.set(recommendation.id);
+    this.error.set('');
+    this.success.set('');
+    this.recommendationsApi.completeRecommendation(recommendation.id, level).subscribe({
+      next: updated => {
+        this.busyId.set(null);
+        this.success.set(`Guardamos como te sentias despues de "${updated.activity.title}".`);
+        this.recommendations.update(items => items.map(item => item.id === updated.id ? updated : item));
+        this.clearPostDraft(updated.id);
+      },
+      error: () => {
+        this.busyId.set(null);
+        this.error.set('No se pudo guardar como te sientes.');
+      }
+    });
+  }
+
+  comparisonText(recommendation: Recommendation): string {
+    const before = recommendation.preIntensity;
+    const after = recommendation.postIntensity;
+    if (!before || !after) {
+      return '';
+    }
+    if (after < before) {
+      return `Segun lo que registraste, la intensidad paso de ${before} a ${after}.`;
+    }
+    if (after > before) {
+      return `Segun lo que registraste, la intensidad subio de ${before} a ${after}.`;
+    }
+    return `Segun lo que registraste, la intensidad se mantuvo en ${before}.`;
+  }
+
+  private clearPostDraft(id: number): void {
+    this.postDrafts.update(({ [id]: _removed, ...rest }) => rest);
+  }
+
+  currentRating(recommendation: Recommendation): number {
+    return this.ratingDrafts()[recommendation.id] ?? recommendation.helpfulnessRating ?? 0;
+  }
+
+  currentComment(recommendation: Recommendation): string {
+    return this.commentDrafts()[recommendation.id] ?? recommendation.feedbackComment ?? '';
+  }
+
+  setRating(recommendation: Recommendation, rating: number): void {
+    this.ratingDrafts.update(drafts => ({ ...drafts, [recommendation.id]: rating }));
+  }
+
+  setComment(recommendation: Recommendation, comment: string): void {
+    this.commentDrafts.update(drafts => ({ ...drafts, [recommendation.id]: comment.slice(0, 300) }));
+  }
+
+  canSubmitFeedback(recommendation: Recommendation): boolean {
+    const rating = this.currentRating(recommendation);
+    if (rating < 1 || this.feedbackBusyId() !== null) {
+      return false;
+    }
+    const changedRating = rating !== (recommendation.helpfulnessRating ?? 0);
+    const changedComment = this.currentComment(recommendation).trim() !== (recommendation.feedbackComment ?? '');
+    return changedRating || changedComment;
+  }
+
+  submitFeedback(recommendation: Recommendation): void {
+    if (!this.canSubmitFeedback(recommendation)) {
+      return;
+    }
+
+    const comment = this.currentComment(recommendation).trim();
+    this.feedbackBusyId.set(recommendation.id);
+    this.error.set('');
+    this.success.set('');
+    this.recommendationsApi.rateRecommendation(recommendation.id, {
+      helpfulnessRating: this.currentRating(recommendation),
+      feedbackComment: comment || undefined
+    }).subscribe({
+      next: updated => {
+        this.feedbackBusyId.set(null);
+        this.success.set(`Gracias por valorar "${updated.activity.title}".`);
+        this.recommendations.update(items => items.map(item => item.id === updated.id ? updated : item));
+        this.ratingDrafts.update(({ [updated.id]: _removed, ...rest }) => rest);
+        this.commentDrafts.update(({ [updated.id]: _removed, ...rest }) => rest);
+      },
+      error: () => {
+        this.feedbackBusyId.set(null);
+        this.error.set('No se pudo guardar tu valoracion.');
       }
     });
   }

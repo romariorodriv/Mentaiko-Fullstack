@@ -25,6 +25,7 @@ import com.mentaiko.backend.config.EmotionCatalogInitializer;
 import com.mentaiko.backend.entity.Emotion;
 import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.enums.Role;
+import com.mentaiko.backend.repository.EmotionActivityRuleRepository;
 import com.mentaiko.backend.repository.EmotionRepository;
 import com.mentaiko.backend.repository.EmotionalEntryRepository;
 import com.mentaiko.backend.repository.ActivityRecommendationRepository;
@@ -50,6 +51,9 @@ class EmotionIntegrationTest {
     private ActivityRecommendationRepository recommendationRepository;
 
     @Autowired
+    private EmotionActivityRuleRepository ruleRepository;
+
+    @Autowired
     private UserRepository userRepository;
 
     @Autowired
@@ -68,6 +72,7 @@ class EmotionIntegrationTest {
     void setUp() {
         recommendationRepository.deleteAll();
         emotionalEntryRepository.deleteAll();
+        ruleRepository.deleteAll();
         emotionRepository.deleteAll();
         userRepository.deleteAll();
     }
