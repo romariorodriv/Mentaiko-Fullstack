@@ -1,0 +1,33 @@
+<header class="page-head"><div><span class="eyebrow">TU DESCANSO</span><h1>Registro de sueño</h1>
+      <p>Registra las horas dormidas y cómo valoras tu descanso. La fecha corresponde al día en que despertaste.</p></div></header>
+    <section class="panel">
+      <form (ngSubmit)="save()">
+        <label>Fecha de despertar <input type="date" name="date" [(ngModel)]="date" required [max]="today"></label>
+        <label>Horas dormidas <input type="number" name="hours" [(ngModel)]="hours" required min="0" max="24" step=".25"></label>
+        <label>Calidad de sueño
+          <select name="quality" [(ngModel)]="quality" required>
+            <option [ngValue]="1">1 — Muy mala</option><option [ngValue]="2">2 — Mala</option>
+            <option [ngValue]="3">3 — Regular</option><option [ngValue]="4">4 — Buena</option>
+            <option [ngValue]="5">5 — Muy buena</option>
+          </select>
+        </label>
+        <button class="btn primary" type="submit" [disabled]="saving()">Guardar descanso</button>
+        <p>Si ya existe un registro para esta fecha, se actualizará.</p>
+      </form>
+      @if(message()){<p class="alert success" role="status">{{message()}}</p>}
+      @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
+    </section>
+    <section class="panel"><h2>Últimos 30 días</h2>
+      @if(entries().length>0){
+        <div class="metric-grid">
+          <article class="metric"><span>Promedio de horas</span><strong>{{averageHours()}}</strong></article>
+          <article class="metric"><span>Calidad promedio (1 a 5)</span><strong>{{averageQuality()}}</strong></article>
+          <article class="metric"><span>Días registrados</span><strong>{{entries().length}}</strong></article>
+        </div>
+      }
+      @if(loading()){<p role="status">Cargando historial...</p>}
+      @if(!loading() && entries().length===0){<p>Todavía no registraste tu descanso.</p>}
+      @for(item of entries();track item.date){
+        <p><strong>{{item.date}}</strong> — {{item.hours}} horas · calidad {{item.quality}}/5</p>
+      }
+    </section>

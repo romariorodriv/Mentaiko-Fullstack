@@ -1,0 +1,37 @@
+<header class="page-head"><div><span class="eyebrow">CÓMO TE SIENTES</span><h1>Mi energía diaria</h1>
+      <p>Registra tu nivel de energía de 1 (muy baja) a 5 (muy alta).</p></div></header>
+    <section class="panel">
+      <form (ngSubmit)="save()">
+        <label>Fecha <input type="date" name="date" [(ngModel)]="date" [max]="today" required></label>
+        <label>Nivel de energía
+          <select name="level" [(ngModel)]="level" required>
+            <option [ngValue]="1">1 — Muy baja</option><option [ngValue]="2">2 — Baja</option>
+            <option [ngValue]="3">3 — Media</option><option [ngValue]="4">4 — Alta</option>
+            <option [ngValue]="5">5 — Muy alta</option>
+          </select>
+        </label>
+        <button class="btn primary" type="submit" [disabled]="saving()">Guardar nivel</button>
+        <p>Un registro por día. Guardar de nuevo reemplaza el valor de esa fecha.</p>
+      </form>
+      @if(message()){<p class="alert success" role="status">{{message()}}</p>}
+      @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
+    </section>
+    <section class="panel"><h2>Últimos 30 días</h2>
+      @if(entries().length>0){
+        <p>Promedio de energía: <strong>{{averageEnergy()}}/5</strong> en {{entries().length}} días registrados.</p>
+        <div class="bars" aria-label="Niveles de energía recientes">
+          @for(entry of entries();track entry.date){
+            <div class="bar-item">
+              <span class="bar-value">{{entry.level}}</span>
+              <div class="bar-track"><i [style.height.%]="entry.level*20"></i></div>
+              <small>{{entry.date.slice(5)}}</small>
+            </div>
+          }
+        </div>
+      }
+      @if(loading()){<p role="status">Cargando historial...</p>}
+      @if(!loading() && entries().length===0){<p>Todavía no registraste tu energía.</p>}
+      @for(item of entries();track item.date){
+        <p><strong>{{item.date}}</strong> — energía {{item.level}}/5</p>
+      }
+    </section>

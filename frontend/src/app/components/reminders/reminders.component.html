@@ -1,0 +1,28 @@
+<header class="page-head"><div><span class="eyebrow">TUS HÁBITOS</span><h1>Recordatorios emocionales</h1>
+ <p>Configura un aviso que aparecerá mientras tengas Mentaiko abierto. No se envían mensajes externos.</p></div></header>
+ <section class="panel">
+   @if(loading()){<p role="status">Cargando preferencias...</p>}
+   @if(error()){<p class="alert error" role="alert">{{error()}}</p>}
+   @if(ready()){
+     <form (ngSubmit)="save()">
+       <label><input type="checkbox" name="enabled" [(ngModel)]="enabled"> Activar avisos dentro de Mentaiko</label>
+       <label for="reminderTime">Hora de Lima</label>
+       <input id="reminderTime" type="time" name="time" [(ngModel)]="time" required>
+       <fieldset><legend>Días para recordar</legend>
+         @for(day of weekdays;track day.number){
+           <label><input type="checkbox" [name]="'day'+day.number" [ngModel]="selectedDays().includes(day.number)"
+             (ngModelChange)="toggle(day.number,$event)"> {{day.label}}</label>
+         }
+       </fieldset>
+       <button class="btn primary" type="submit" [disabled]="saving()">Guardar preferencias</button>
+     </form>
+     @if(due()){
+       <div class="alert" role="status">
+         <p>Es un buen momento para registrar cómo te sientes.</p>
+         <a href="/app/checkins">Registrar emoción</a>
+         <button type="button" (click)="acknowledge()">Marcar como visto</button>
+       </div>
+     }
+     @if(message()){<p class="alert success" role="status">{{message()}}</p>}
+   }
+ </section>
