@@ -2,23 +2,25 @@ package com.mentaiko.backend.entity;
 
 import java.time.LocalDateTime;
 
+import com.mentaiko.backend.enums.RecommendationDiscardReason;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.Index;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
         name = "activity_recommendations",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"checkin_id"})
+        indexes = @Index(name = "ix_activity_recommendations_checkin", columnList = "checkin_id")
 )
 public class ActivityRecommendation {
 
@@ -30,7 +32,7 @@ public class ActivityRecommendation {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "checkin_id", nullable = false)
     private EmotionalEntry checkin;
 
@@ -49,6 +51,13 @@ public class ActivityRecommendation {
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
+
+    @Column(name = "discarded_at")
+    private LocalDateTime discardedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "discard_reason", length = 30)
+    private RecommendationDiscardReason discardReason;
 
     @Column(name = "helpfulness_rating")
     private Integer helpfulnessRating;
@@ -117,6 +126,19 @@ public class ActivityRecommendation {
 
     public LocalDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public LocalDateTime getDiscardedAt() {
+        return discardedAt;
+    }
+
+    public RecommendationDiscardReason getDiscardReason() {
+        return discardReason;
+    }
+
+    public void discard(RecommendationDiscardReason reason) {
+        discardedAt = LocalDateTime.now();
+        discardReason = reason;
     }
 
     public void complete() {

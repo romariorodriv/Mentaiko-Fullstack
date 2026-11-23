@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { RecommendationsService } from '../../core/services/recommendations.service';
 import { Recommendation } from '../../shared/models/models';
 
-export type ActivityHistoryStatus = 'ALL' | 'COMPLETED' | 'PENDING';
+export type ActivityHistoryStatus = 'ALL' | 'COMPLETED' | 'PENDING' | 'DISCARDED';
 
 @Component({
   selector: 'app-activity-history',
@@ -32,15 +32,13 @@ export class ActivityHistoryComponent implements OnInit {
     const to = this.to();
 
     return this.recommendations().filter(item => {
-      const completed = !!item.completedAt;
-      if (status === 'COMPLETED' && !completed) return false;
-      if (status === 'PENDING' && completed) return false;
+      const itemStatus = item.completedAt ? 'COMPLETED' : item.discardedAt ? 'DISCARDED' : 'PENDING';
+      if (status !== 'ALL' && status !== itemStatus) return false;
 
-      // For completed activities use their completion date; otherwise the recommendation date.
-      const date = (item.completedAt ?? item.createdAt).slice(0, 10);
+      const date = (item.completedAt ?? item.discardedAt ?? item.createdAt).slice(0, 10);
       return (!from || date >= from) && (!to || date <= to);
     }).sort((a, b) =>
-      (b.completedAt ?? b.createdAt).localeCompare(a.completedAt ?? a.createdAt)
+      (b.completedAt ?? b.discardedAt ?? b.createdAt).localeCompare(a.completedAt ?? a.discardedAt ?? a.createdAt)
     );
   });
 
@@ -66,7 +64,7 @@ export class ActivityHistoryComponent implements OnInit {
   }
 
   setStatus(value: string): void {
-    if (value === 'ALL' || value === 'COMPLETED' || value === 'PENDING') {
+    if (value === 'ALL' || value === 'COMPLETED' || value === 'PENDING' || value === 'DISCARDED') {
       this.status.set(value);
     }
   }

@@ -1,0 +1,26 @@
+<div class="alternative-options">
+  <label>Motivo (opcional)
+    <select #reason [disabled]="busy() || disabled()">
+      <option value="">Sin indicar</option>
+      @for (option of reasons; track option.value) {
+        <option [value]="option.value">{{ option.label }}</option>
+      }
+    </select>
+  </label>
+  <label>Tiempo disponible (opcional)
+    <select #minutes [disabled]="busy() || disabled()">
+      <option value="">Sin indicar</option>
+      <option value="2">Hasta 2 minutos</option>
+      <option value="5">Hasta 5 minutos</option>
+      <option value="10">Hasta 10 minutos</option>
+      <option value="15">Hasta 15 minutos</option>
+    </select>
+  </label>
+  <button type="button" class="btn secondary" (click)="submit(reason.value, minutes.value)"
+          [disabled]="busy() || disabled()">
+    {{ busy() ? 'Buscando otra sugerencia…' : 'Pedir otra sugerencia' }}
+  </button>
+</div>
+@if (error()) {
+  <p class="alert error" role="alert">{{ error() }}</p>
+}

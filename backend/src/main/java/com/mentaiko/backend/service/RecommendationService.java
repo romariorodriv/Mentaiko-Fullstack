@@ -3,6 +3,7 @@ package com.mentaiko.backend.service;
 import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import org.slf4j.Logger;
@@ -10,8 +11,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.mentaiko.backend.dto.recommendation.AlternativeRecommendationRequest;
 import com.mentaiko.backend.dto.recommendation.RecommendationActivityResponse;
 import com.mentaiko.backend.dto.recommendation.RecommendationFeedbackRequest;
 import com.mentaiko.backend.dto.recommendation.RecommendationResponse;
@@ -21,6 +25,7 @@ import com.mentaiko.backend.entity.EmotionActivityRule;
 import com.mentaiko.backend.entity.EmotionalEntry;
 import com.mentaiko.backend.entity.MicroActivity;
 import com.mentaiko.backend.entity.User;
+import com.mentaiko.backend.enums.RecommendationDiscardReason;
 import com.mentaiko.backend.exception.UserInactiveException;
 import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.EmotionActivityRuleRepository;
@@ -39,6 +44,9 @@ public class RecommendationService {
     private final MicroActivityRepository microActivityRepository;
     private final UserRepository userRepository;
     private final JdbcTemplate jdbc;
+    private final AlternativeRecommendationAi alternativeAi;
+    private final TransactionTemplate reads;
+    private final TransactionTemplate writes;
 
     public RecommendationService(
             ActivityRecommendationRepository recommendationRepository,
@@ -46,7 +54,9 @@ public class RecommendationService {
             EmotionalEntryRepository emotionalEntryRepository,
             MicroActivityRepository microActivityRepository,
             UserRepository userRepository,
-            JdbcTemplate jdbc
+            JdbcTemplate jdbc,
+            AlternativeRecommendationAi alternativeAi,
+            PlatformTransactionManager transactionManager
     ) {
         this.recommendationRepository = recommendationRepository;
         this.ruleRepository = ruleRepository;
@@ -54,19 +64,23 @@ public class RecommendationService {
         this.microActivityRepository = microActivityRepository;
         this.userRepository = userRepository;
         this.jdbc = jdbc;
+        this.alternativeAi = alternativeAi;
+        this.reads = new TransactionTemplate(transactionManager);
+        this.reads.setReadOnly(true);
+        this.writes = new TransactionTemplate(transactionManager);
     }
 
     @Transactional
     public RecommendationResponse recommend(String userEmail, Long checkinId) {
         User user = findActiveUser(userEmail);
-        EmotionalEntry checkin = emotionalEntryRepository.findByIdAndUserWithEmotion(checkinId, user)
+        EmotionalEntry checkin = emotionalEntryRepository.findLockedByIdAndUser(checkinId, user)
                 .orElseThrow(() -> {
                     log.warn("Recommendation rejected for check-in id={} and user id={} because check-in was not found or is not owned by user",
                             checkinId, user.getId());
                     return new ResponseStatusException(HttpStatus.NOT_FOUND, "Check-in no encontrado");
                 });
 
-        return recommendationRepository.findByCheckin(checkin)
+        return recommendationRepository.findByCheckinAndDiscardedAtIsNull(checkin)
                 .map(recommendation -> {
                     log.debug("Existing recommendation id={} returned for check-in id={}",
                             recommendation.getId(), checkinId);
@@ -98,7 +112,7 @@ public class RecommendationService {
     @Transactional
     public RecommendationResponse complete(String userEmail, Long id, Integer postIntensity) {
         User user = findActiveUser(userEmail);
-        ActivityRecommendation recommendation = recommendationRepository.findByIdAndUserWithDetails(id, user)
+        ActivityRecommendation recommendation = recommendationRepository.findLockedByIdAndUser(id, user)
                 .orElseThrow(() -> {
                     log.warn("Recommendation completion rejected for id={} and user id={} because recommendation was not found or is not owned by user",
                             id, user.getId());
@@ -108,6 +122,9 @@ public class RecommendationService {
                     );
                 });
 
+        if (recommendation.getDiscardedAt() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "La recomendación ya fue descartada");
+        }
         recommendation.complete();
         if (postIntensity != null) {
             recommendation.recordPostIntensity(postIntensity);
@@ -115,6 +132,92 @@ public class RecommendationService {
         log.info("Recommendation id={} completed by user id={} withPostIntensity={}",
                 recommendation.getId(), user.getId(), postIntensity != null);
         return toResponse(recommendation);
+    }
+
+    public RecommendationResponse alternative(String userEmail, Long id, AlternativeRecommendationRequest request) {
+        var context = reads.execute(status -> {
+            User user = findActiveUser(userEmail);
+            var current = recommendationRepository.findByIdAndUserWithDetails(id, user)
+                    .orElseThrow(this::recommendationNotFound);
+            requirePending(current);
+            var checkin = current.getCheckin();
+            return new AlternativeContext(checkin.getId(), checkin.getEmotion().getNormalizedName(),
+                    checkin.getIntensity(), alternativeCandidates(checkin, request.availableMinutes()).stream()
+                    .map(activity -> new AlternativeRecommendationAi.Candidate(
+                            activity.getId(), activity.getActivityType(), activity.getDurationMinutes()))
+                    .toList());
+        });
+
+        // The provider may take time. The write transaction starts after it returns.
+        Long suggestedId = alternativeAi.choose(context.emotion(), context.intensity(), request.reason(),
+                request.availableMinutes(), context.candidates()).orElse(null);
+
+        return writes.execute(status -> {
+            User user = findActiveUser(userEmail);
+            var checkin = emotionalEntryRepository.findLockedByIdAndUser(context.checkinId(), user)
+                    .orElseThrow(this::recommendationNotFound);
+            var current = recommendationRepository.findLockedByIdAndUser(id, user)
+                    .orElseThrow(this::recommendationNotFound);
+            requirePending(current);
+            var candidates = alternativeCandidates(checkin, request.availableMinutes());
+            var suggested = candidates.stream().filter(activity -> activity.getId().equals(suggestedId)).findFirst();
+            var activity = suggested.orElse(candidates.getFirst());
+
+            current.discard(request.reason());
+            recommendationRepository.flush();
+
+            var replacement = new ActivityRecommendation();
+            replacement.setUser(user);
+            replacement.setCheckin(checkin);
+            replacement.setActivity(activity);
+            replacement.setFallbackUsed(suggested.isEmpty());
+            replacement.setReason(alternativeReason(request.reason()));
+            return toResponse(recommendationRepository.save(replacement));
+        });
+    }
+
+    private List<MicroActivity> alternativeCandidates(EmotionalEntry checkin, Integer availableMinutes) {
+        Set<Long> previouslySuggested = new HashSet<>(recommendationRepository.findActivityIdsByCheckin(checkin));
+        var candidates = new LinkedHashMap<Long, MicroActivity>();
+        var rules = ruleRepository
+                .findByEmotionAndActiveTrueAndActivityActiveTrueOrderByPriorityAscActivityTitleAscActivityIdAsc(checkin.getEmotion());
+        rules.forEach(rule -> candidates.putIfAbsent(rule.getActivity().getId(), rule.getActivity()));
+        microActivityRepository.findByActiveTrueOrderByTitleAscIdAsc()
+                .forEach(activity -> candidates.putIfAbsent(activity.getId(), activity));
+
+        var available = candidates.values().stream()
+                .filter(activity -> !previouslySuggested.contains(activity.getId()))
+                .filter(activity -> availableMinutes == null || activity.getDurationMinutes() <= availableMinutes)
+                .toList();
+        if (available.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    availableMinutes == null ? "No hay otra microactividad activa disponible"
+                            : "No hay otra microactividad que encaje en el tiempo indicado");
+        }
+        return available;
+    }
+
+    private void requirePending(ActivityRecommendation recommendation) {
+        if (recommendation.isCompleted() || recommendation.getDiscardedAt() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo puedes cambiar una recomendación pendiente");
+        }
+    }
+
+    private ResponseStatusException recommendationNotFound() {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, "Recomendación no encontrada");
+    }
+
+    private String alternativeReason(RecommendationDiscardReason reason) {
+        if (reason == null) {
+            return "Aquí tienes otra microactividad que puedes probar a tu ritmo.";
+        }
+        return switch (reason) {
+            case TRANSPORTE -> "Si estás en camino, prueba esta opción cuando puedas hacerla con comodidad.";
+            case BIBLIOTECA -> "Si necesitas mantener el silencio, prueba esta opción cuando te resulte cómoda.";
+            case POCO_ESPACIO -> "Si tienes poco espacio, prueba esta opción si puedes realizarla con comodidad.";
+            case POCO_TIEMPO -> "Si tienes poco tiempo, puedes probar esta opción a tu ritmo.";
+            case OTRO -> "Está bien cambiar de actividad. Prueba esta opción si te resulta cómoda.";
+        };
     }
 
     @Transactional
@@ -234,10 +337,16 @@ public class RecommendationService {
                 recommendation.getHelpfulnessRating(),
                 recommendation.getFeedbackComment(),
                 recommendation.getCheckin().getIntensity(),
-                recommendation.getPostIntensity()
+                recommendation.getPostIntensity(),
+                recommendation.getDiscardedAt(),
+                recommendation.getDiscardReason()
         );
     }
 
     private record ActivityChoice(MicroActivity activity, boolean fallbackUsed) {
+    }
+
+    private record AlternativeContext(Long checkinId, String emotion, int intensity,
+            List<AlternativeRecommendationAi.Candidate> candidates) {
     }
 }

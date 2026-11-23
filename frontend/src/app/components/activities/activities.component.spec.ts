@@ -46,6 +46,30 @@ describe('ActivitiesComponent', () => {
 
   afterEach(() => http.verify());
 
+  it('requests an alternative for a pending recommendation and replaces it in the list', () => {
+    const fixture = createWith([
+      recommendation({ completedAt: undefined }),
+      recommendation({ id: 11 }),
+      recommendation({ id: 12, completedAt: undefined, discardedAt: '2026-11-22T11:00:00' })
+    ]);
+
+    const forms = fixture.nativeElement.querySelectorAll('app-recommendation-alternative');
+    expect(forms.length).toBe(1);
+    const [reason, minutes] = forms[0].querySelectorAll('select');
+    reason.value = 'BIBLIOTECA';
+    minutes.value = '5';
+    forms[0].querySelector('button').click();
+
+    const request = http.expectOne('/api/recommendations/10/alternative');
+    expect(request.request.method).toBe('POST');
+    expect(request.request.body).toEqual({ reason: 'BIBLIOTECA', availableMinutes: 5 });
+    request.flush(recommendation({ id: 13, completedAt: undefined, activity: { ...activity, title: 'Pausa silenciosa' } }));
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.recommendations().map(item => item.id)).toEqual([13, 11]);
+    expect(fixture.nativeElement.textContent).toContain('Nueva sugerencia: Pausa silenciosa');
+  });
+
   describe('valoracion de utilidad (HU-27)', () => {
     it('shows the rating controls only for completed activities', () => {
       const fixture = createWith([

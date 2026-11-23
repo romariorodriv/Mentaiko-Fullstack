@@ -68,6 +68,10 @@ La cuenta administradora local es exclusivamente para demostracion academica. La
 
 ## Variables backend
 
+Para solicitar alternativas con HU-25 en una base PostgreSQL existente, aplica `database/012_recommendation_alternatives.sql` antes de iniciar el backend. La migración conserva el historial y permite una recomendación vigente por check-in.
+
+`OPENAI_API_KEY` habilita la selección contextual de alternativas. Se puede configurar en `backend/.env` junto con `OPENAI_RECOMMENDATION_MODEL`, que usa `gpt-4o-mini` por defecto. Cuando falta la clave o falla el proveedor, se usa el catálogo local por prioridad.
+
 La aplicacion real requiere variables de entorno para PostgreSQL y JWT:
 
 ```text

@@ -94,7 +94,7 @@ public class CheckinService {
     @Transactional
     public void delete(String userEmail, Long id) {
         User user = findActiveUser(userEmail);
-        EmotionalEntry entry = emotionalEntryRepository.findByIdAndUserWithEmotion(id, user)
+        EmotionalEntry entry = emotionalEntryRepository.findLockedByIdAndUser(id, user)
                 .orElseThrow(() -> {
                     log.warn("Check-in delete rejected for id={} and user id={} because record was not found or is not owned by user",
                             id, user.getId());

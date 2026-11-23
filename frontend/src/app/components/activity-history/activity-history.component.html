@@ -29,7 +29,7 @@
   <div class="history-toolbar">
     <div>
       <h2>Registro de actividades</h2>
-      <p>Filtra por estado y por fecha de recomendación o finalización.</p>
+      <p>Filtra por estado y por fecha de recomendación, finalización o descarte.</p>
     </div>
     <button type="button" class="btn secondary" (click)="load()" [disabled]="loading()">Actualizar</button>
   </div>
@@ -40,6 +40,7 @@
         <option value="ALL">Todas</option>
         <option value="COMPLETED">Completadas</option>
         <option value="PENDING">Pendientes</option>
+        <option value="DISCARDED">Descartadas</option>
       </select>
     </label>
     <label for="history-from">Desde
@@ -71,6 +72,9 @@
             @if (item.completedAt) {
               <span class="status-pill done">Completada</span>
               <span>Finalizada: {{ item.completedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            } @else if (item.discardedAt) {
+              <span class="status-pill">Descartada</span>
+              <span>{{ item.discardedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
             } @else {
               <span class="status-pill">Pendiente</span>
               <span>Recomendada: {{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
