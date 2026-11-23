@@ -87,6 +87,42 @@ describe('ActivitiesComponent', () => {
     });
   });
 
+  describe('vista Mis Favoritas (HU-24)', () => {
+    it('shows an empty state distinct from an API failure', () => {
+      const fixture = createWith([]);
+      fixture.componentInstance.selectCatalogTab('favorites');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Todavia no tienes favoritas');
+    });
+
+    it('shows saved activities and removes them from the favorites tab', () => {
+      const fixture = createWith([]);
+      const component = fixture.componentInstance;
+      component.favorites.set([{...activity, activityType:'GENERAL', savedAt:'2026-11-23T12:00:00'}]);
+      component.selectCatalogTab('favorites');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[aria-label="Mis microactividades favoritas"]')).not.toBeNull();
+      component.toggleFavorite(activity);
+      http.expectOne('/api/micro-activities/1/favorite').flush(null);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Todavia no tienes favoritas');
+    });
+
+    it('keeps the empty state hidden on failed favorites load and allows retry', () => {
+      const fixture = createWith([]);
+      const component = fixture.componentInstance;
+      component.selectCatalogTab('favorites');
+      component.favoritesError.set('No se pudieron cargar tus favoritas.');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).not.toContain('Todavia no tienes favoritas');
+      expect(fixture.nativeElement.textContent).toContain('Reintentar');
+      component.loadFavorites();
+      http.expectOne('/api/micro-activities/favorites').flush([]);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Todavia no tienes favoritas');
+    });
+  });
+
   describe('valoracion de utilidad (HU-27)', () => {
     it('shows the rating controls only for completed activities', () => {
       const fixture = createWith([

@@ -13,6 +13,11 @@ export class ActivitiesComponent implements OnInit {
   readonly activities = signal<MicroActivity[]>([]);
   readonly recommendations = signal<Recommendation[]>([]);
   readonly favorites = signal<FavoriteMicroActivity[]>([]);
+  readonly catalogTab = signal<'all' | 'favorites'>('all');
+
+  selectCatalogTab(tab: 'all' | 'favorites'): void {
+    this.catalogTab.set(tab);
+  }
   readonly favoritesLoading = signal(true);
   readonly favoritesError = signal('');
   readonly favoriteBusyId = signal<number | null>(null);
@@ -52,7 +57,7 @@ export class ActivitiesComponent implements OnInit {
     return this.favorites().some(item => item.id === id);
   }
 
-  toggleFavorite(activity: MicroActivity): void {
+  toggleFavorite(activity: Pick<MicroActivity, 'id' | 'title'>): void {
     if (this.favoriteBusyId() !== null || this.favoritesLoading() || this.favoritesError()) {
       return;
     }
@@ -60,25 +65,30 @@ export class ActivitiesComponent implements OnInit {
     this.favoriteBusyId.set(activity.id);
     this.error.set('');
     this.success.set('');
-    const operation = wasFavorite
-      ? this.activitiesApi.removeFavorite(activity.id)
-      : this.activitiesApi.addFavorite(activity.id);
-    operation.subscribe({
-      next: result => {
-        this.favoriteBusyId.set(null);
-        if (wasFavorite) {
+    if (wasFavorite) {
+      this.activitiesApi.removeFavorite(activity.id).subscribe({
+        next: () => {
+          this.favoriteBusyId.set(null);
           this.favorites.update(items => items.filter(item => item.id !== activity.id));
           this.success.set('Microactividad retirada de favoritas.');
-        } else {
-          this.favorites.update(items => [...items.filter(item => item.id !== activity.id), result as FavoriteMicroActivity]);
+        },
+        error: () => this.handleFavoriteError()
+      });
+    } else {
+      this.activitiesApi.addFavorite(activity.id).subscribe({
+        next: favorite => {
+          this.favoriteBusyId.set(null);
+          this.favorites.update(items => [...items.filter(item => item.id !== activity.id), favorite]);
           this.success.set('Microactividad guardada en favoritas.');
-        }
-      },
-      error: () => {
-        this.favoriteBusyId.set(null);
-        this.error.set('No se pudo actualizar la actividad favorita. Intenta nuevamente.');
-      }
-    });
+        },
+        error: () => this.handleFavoriteError()
+      });
+    }
+  }
+
+  private handleFavoriteError(): void {
+    this.favoriteBusyId.set(null);
+    this.error.set('No se pudo actualizar la actividad favorita. Intenta nuevamente.');
   }
 
   load(): void {

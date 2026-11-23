@@ -5,3 +5,6 @@
 .favorite-toggle.selected { color: #926520; }
 .favorite-toggle:disabled { cursor: not-allowed; opacity: .55; }
 .favorite-toggle:focus-visible { outline: 3px solid #3673ac; outline-offset: 3px; }
+
+.favorite-tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 1rem; }
+.favorite-tabs .selected { border: 2px solid currentColor; font-weight: 700; }
