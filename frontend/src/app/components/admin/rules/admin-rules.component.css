@@ -1,0 +1,10 @@
+/* Los estilos compartidos permanecen en src/styles.css. */
+.rules-table-wrap { overflow-x: auto; }
+.rules-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.rules-table th { text-align: left; font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); padding: .6rem .5rem; border-bottom: 1px solid var(--line); }
+.rules-table td { padding: .7rem .5rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.rules-table tr.editing td { background: #f2faf7; }
+.rules-table .status-pill { margin-left: .35rem; }
+.rule-state { display: inline-flex; align-items: center; gap: .55rem; white-space: nowrap; }
+.rule-cancel { margin-top: .6rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
