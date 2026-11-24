@@ -25,7 +25,15 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.enums.Role;
+import com.mentaiko.backend.repository.ActivityRecommendationRepository;
+import com.mentaiko.backend.repository.EmotionActivityRuleRepository;
+import com.mentaiko.backend.repository.EmotionRepository;
+import com.mentaiko.backend.repository.EmotionalEntryRepository;
+import com.mentaiko.backend.repository.FavoriteMicroActivityRepository;
+import com.mentaiko.backend.repository.MicroActivityRepository;
+import com.mentaiko.backend.repository.PasswordResetTokenRepository;
 import com.mentaiko.backend.repository.UserRepository;
+import com.mentaiko.backend.repository.WeeklyGoalRepository;
 import com.mentaiko.backend.security.JwtService;
 import com.mentaiko.backend.service.ActivityPreferenceService;
 
@@ -52,9 +60,42 @@ class ActivityPreferenceIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private FavoriteMicroActivityRepository favoriteRepository;
+
+    @Autowired
+    private ActivityRecommendationRepository recommendationRepository;
+
+    @Autowired
+    private EmotionActivityRuleRepository ruleRepository;
+
+    @Autowired
+    private EmotionalEntryRepository emotionalEntryRepository;
+
+    @Autowired
+    private WeeklyGoalRepository weeklyGoalRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Autowired
+    private MicroActivityRepository microActivityRepository;
+
+    @Autowired
+    private EmotionRepository emotionRepository;
+
     @BeforeEach
     void setUp() {
+        // Otras clases de prueba comparten la BD H2: limpiar primero todo lo que referencia a users.
         jdbc.update("DELETE FROM activity_preferences");
+        favoriteRepository.deleteAll();
+        recommendationRepository.deleteAll();
+        ruleRepository.deleteAll();
+        emotionalEntryRepository.deleteAll();
+        weeklyGoalRepository.deleteAll();
+        passwordResetTokenRepository.deleteAll();
+        microActivityRepository.deleteAll();
+        emotionRepository.deleteAll();
         userRepository.deleteAll();
     }
 

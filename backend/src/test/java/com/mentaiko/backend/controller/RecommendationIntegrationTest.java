@@ -32,8 +32,11 @@ import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.EmotionActivityRuleRepository;
 import com.mentaiko.backend.repository.EmotionRepository;
 import com.mentaiko.backend.repository.EmotionalEntryRepository;
+import com.mentaiko.backend.repository.FavoriteMicroActivityRepository;
 import com.mentaiko.backend.repository.MicroActivityRepository;
+import com.mentaiko.backend.repository.PasswordResetTokenRepository;
 import com.mentaiko.backend.repository.UserRepository;
+import com.mentaiko.backend.repository.WeeklyGoalRepository;
 import com.mentaiko.backend.security.JwtService;
 import com.mentaiko.backend.service.EmotionService;
 import com.mentaiko.backend.service.MicroActivityService;
@@ -79,12 +82,25 @@ class RecommendationIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private FavoriteMicroActivityRepository favoriteRepository;
+
+    @Autowired
+    private WeeklyGoalRepository weeklyGoalRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordResetTokenRepository;
+
     @BeforeEach
     void setUp() {
+        // Otras clases de prueba comparten la BD H2: limpiar primero todo lo que referencia a users.
         jdbc.update("DELETE FROM activity_preferences");
+        favoriteRepository.deleteAll();
         recommendationRepository.deleteAll();
         ruleRepository.deleteAll();
         emotionalEntryRepository.deleteAll();
+        weeklyGoalRepository.deleteAll();
+        passwordResetTokenRepository.deleteAll();
         microActivityRepository.deleteAll();
         emotionRepository.deleteAll();
         userRepository.deleteAll();
