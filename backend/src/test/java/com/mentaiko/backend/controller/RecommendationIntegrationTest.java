@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,6 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -74,8 +76,12 @@ class RecommendationIntegrationTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private JdbcTemplate jdbc;
+
     @BeforeEach
     void setUp() {
+        jdbc.update("DELETE FROM activity_preferences");
         recommendationRepository.deleteAll();
         ruleRepository.deleteAll();
         emotionalEntryRepository.deleteAll();
@@ -505,6 +511,113 @@ class RecommendationIntegrationTest {
 
         assertThat(recommendationRepository.findById(recommendation.getId()).orElseThrow().getHelpfulnessRating())
                 .isNull();
+    }
+
+    // HU-22 CA02: con varias reglas activas aplicables, se priorizan las categorias preferidas.
+
+    @Test
+    void preferredCategoryIsPrioritizedAmongActiveRulesForTheEmotion() throws Exception {
+        User user = saveUser("hu22-prefers-breathing@example.com");
+        Emotion emotion = saveEmotion("Ansiedad", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity walk = saveActivity("Caminar", true, "MOVIMIENTO");
+        MicroActivity breathe = saveActivity("Respiracion 4-7-8", true, "RESPIRACION");
+        saveRule(emotion, walk, 1, true);
+        saveRule(emotion, breathe, 2, true);
+        savePreferences(user, "[\"RESPIRACION\"]");
+
+        recommend(user, checkin)
+                .andExpect(jsonPath("$.activity.id").value(breathe.getId()))
+                .andExpect(jsonPath("$.fallbackUsed").value(false));
+    }
+
+    @Test
+    void withoutPreferencesTheHighestPriorityRuleIsKept() throws Exception {
+        User user = saveUser("hu22-no-preferences@example.com");
+        Emotion emotion = saveEmotion("Ansiedad", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity walk = saveActivity("Caminar", true, "MOVIMIENTO");
+        MicroActivity breathe = saveActivity("Respiracion 4-7-8", true, "RESPIRACION");
+        saveRule(emotion, walk, 1, true);
+        saveRule(emotion, breathe, 2, true);
+
+        recommend(user, checkin)
+                .andExpect(jsonPath("$.activity.id").value(walk.getId()))
+                .andExpect(jsonPath("$.fallbackUsed").value(false));
+    }
+
+    @Test
+    void preferenceWithoutMatchingRuleKeepsPriorityOrder() throws Exception {
+        User user = saveUser("hu22-no-match@example.com");
+        Emotion emotion = saveEmotion("Estres", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity walk = saveActivity("Caminar", true, "MOVIMIENTO");
+        MicroActivity breathe = saveActivity("Respiracion 4-7-8", true, "RESPIRACION");
+        saveRule(emotion, walk, 1, true);
+        saveRule(emotion, breathe, 2, true);
+        savePreferences(user, "[\"DESCANSO_OCULAR\"]");
+
+        recommend(user, checkin)
+                .andExpect(jsonPath("$.activity.id").value(walk.getId()))
+                .andExpect(jsonPath("$.fallbackUsed").value(false));
+    }
+
+    @Test
+    void inactivePreferredActivityIsNotRecommended() throws Exception {
+        User user = saveUser("hu22-inactive-preferred@example.com");
+        Emotion emotion = saveEmotion("Cansancio", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        MicroActivity walk = saveActivity("Caminar", true, "MOVIMIENTO");
+        MicroActivity eyes = saveActivity("Regla 20-20-20", false, "DESCANSO_OCULAR");
+        saveRule(emotion, walk, 2, true);
+        saveRule(emotion, eyes, 1, true);
+        savePreferences(user, "[\"DESCANSO_OCULAR\"]");
+
+        recommend(user, checkin)
+                .andExpect(jsonPath("$.activity.id").value(walk.getId()))
+                .andExpect(jsonPath("$.fallbackUsed").value(false));
+    }
+
+    @Test
+    void preferredCategoryIsPrioritizedInActiveCatalogFallback() throws Exception {
+        User user = saveUser("hu22-fallback@example.com");
+        Emotion emotion = saveEmotion("Tristeza", true);
+        EmotionalEntry checkin = saveCheckin(user, emotion);
+        saveActivity("Caminar", true, "MOVIMIENTO");
+        MicroActivity writing = saveActivity("Diario de gratitud", true, "ESCRITURA");
+        savePreferences(user, "[\"ESCRITURA\"]");
+
+        recommend(user, checkin)
+                .andExpect(jsonPath("$.activity.id").value(writing.getId()))
+                .andExpect(jsonPath("$.fallbackUsed").value(true));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions recommend(User user, EmotionalEntry checkin)
+            throws Exception {
+        return mockMvc.perform(post("/api/recommendations")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"checkinId\":" + checkin.getId() + "}"))
+                .andExpect(status().isCreated());
+    }
+
+    private void savePreferences(User user, String selectedJson) throws Exception {
+        mockMvc.perform(put("/api/me/activity-preferences")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(user))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"selected\":" + selectedJson + "}"))
+                .andExpect(status().isOk());
+    }
+
+    private MicroActivity saveActivity(String title, boolean active, String activityType) {
+        MicroActivity activity = new MicroActivity();
+        activity.setTitle(title);
+        activity.setNormalizedTitle(microActivityService.normalizeForUniqueness(title));
+        activity.setDescription("Descripcion de " + title);
+        activity.setDurationMinutes(5);
+        activity.setActive(active);
+        activity.setActivityType(activityType);
+        return microActivityRepository.save(activity);
     }
 
     private ActivityRecommendation saveCompletedRecommendation(
