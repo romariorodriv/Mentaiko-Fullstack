@@ -33,6 +33,20 @@ Plataforma web universitaria de bienestar emocional.
 | HU12 Reporte emocional semanal | Implementada |
 | HU13 Distribucion emocional | Implementada |
 | HU14 Indicadores administrativos anonimizados | Implementada |
+| HU22 Preferencias de tipos de actividad | Implementada |
+
+### HU22: equivalencia de categorias con Jira
+
+El estudiante elige sus tipos preferidos en `/app/preferencias-actividades` (tambien accesible desde `/app/perfil`) mediante `GET/PUT /api/me/activity-preferences`. Las recomendaciones priorizan, entre las reglas activas de la emocion, las actividades de esas categorias.
+
+| Jira | Codigo en catalogo | Etiqueta visible |
+| --- | --- | --- |
+| Respiracion | `RESPIRACION` | Respiración |
+| Reflexion escrita | `ESCRITURA` | Reflexión escrita |
+| Estiramiento | `MOVIMIENTO` | Movimiento y estiramiento |
+| Descanso ocular | `DESCANSO_OCULAR` (nuevo) | Descanso ocular |
+
+`RELAJACION`, `ATENCION_PLENA` y `GENERAL` se mantienen. Antes de desplegar, aplicar `database/012_activity_type_descanso_ocular.sql` con psql: es idempotente, actualiza los CHECK de `micro_activities` y `activity_preferences` e inserta la actividad de ejemplo "Regla 20-20-20 para tus ojos" si la categoria esta vacia.
 
 ## Verificacion
 
