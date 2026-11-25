@@ -2,6 +2,8 @@ package com.mentaiko.backend.controller;
 
 import java.util.List;
 
+import org.springframework.web.server.ResponseStatusException;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,11 +39,21 @@ public class MicroActivityController {
     @GetMapping("/api/micro-activities")
     public List<MicroActivityResponse> list(
             @RequestParam(defaultValue = "true") boolean activeOnly,
+            @RequestParam(required = false) Integer maxDuration,
             Authentication authentication
     ) {
         boolean admin = authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
-        return microActivityService.list(activeOnly || !admin);
+        if (maxDuration != null && (maxDuration < 1 || maxDuration > 120)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "maxDuration debe estar entre 1 y 120 minutos");
+        }
+        List<MicroActivityResponse> listed = microActivityService.list(activeOnly || !admin);
+        if (maxDuration == null) {
+            return listed;
+        }
+        return listed.stream()
+                .filter(item -> item.active() && item.durationMinutes() <= maxDuration)
+                .toList();
     }
 
     @GetMapping("/api/micro-activities/favorites")

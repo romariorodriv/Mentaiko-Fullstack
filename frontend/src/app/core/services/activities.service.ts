@@ -9,7 +9,11 @@ export class ActivitiesService {
   private readonly base = environment.apiUrl;
   constructor(private readonly http: HttpClient) {}
 
-  activities(activeOnly = true): Observable<MicroActivity[]> { return this.http.get<MicroActivity[]>(`${this.base}/micro-activities`, {params: {activeOnly}}); }
+  activities(activeOnly = true, maxDuration?: number): Observable<MicroActivity[]> {
+    return this.http.get<MicroActivity[]>(`${this.base}/micro-activities`, {
+      params: {...{activeOnly}, ...(maxDuration === undefined ? {} : {maxDuration})}
+    });
+  }
   favorites(): Observable<FavoriteMicroActivity[]> {
     return this.http.get<FavoriteMicroActivity[]>(`${this.base}/micro-activities/favorites`);
   }

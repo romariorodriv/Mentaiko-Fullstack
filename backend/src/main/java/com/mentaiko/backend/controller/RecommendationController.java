@@ -34,7 +34,7 @@ public class RecommendationController {
             Authentication authentication,
             @Valid @RequestBody CreateRecommendationRequest request
     ) {
-        return recommendationService.recommend(authentication.getName(), request.checkinId());
+        return recommendationService.recommend(authentication.getName(), request.checkinId(), request.maxDurationMinutes());
     }
 
     @GetMapping("/api/recommendations/me")

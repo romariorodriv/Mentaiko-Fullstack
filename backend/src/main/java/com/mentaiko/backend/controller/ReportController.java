@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.mentaiko.backend.dto.report.CompareResponse;
 import com.mentaiko.backend.dto.report.DistributionResponse;
 import com.mentaiko.backend.dto.report.WeeklyPointResponse;
 import com.mentaiko.backend.service.ReportService;
@@ -33,5 +34,14 @@ public class ReportController {
             @RequestParam(required = false) LocalDate to
     ) {
         return reportService.distribution(authentication.getName(), from, to);
+    }
+
+    @GetMapping("/api/reports/compare")
+    public CompareResponse compare(
+            Authentication authentication,
+            @RequestParam String weekA,
+            @RequestParam String weekB
+    ) {
+        return reportService.compare(authentication.getName(), weekA, weekB);
     }
 }

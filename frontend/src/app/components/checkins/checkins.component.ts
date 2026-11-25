@@ -33,6 +33,13 @@ export class CheckinsComponent implements OnInit {
   readonly totalPages = signal(0);
   readonly editingId = signal<number | null>(null);
   readonly recommendationBusyId = signal<number | null>(null);
+  readonly availableMinutes = signal<number | null>(null);
+  readonly quickMinutes = [2, 5, 10] as const;
+
+  selectAvailableMinutes(minutes: number | null): void {
+    this.availableMinutes.set(minutes);
+  }
+
   readonly deleteTarget = signal<Checkin | null>(null);
   readonly deleting = signal(false);
   readonly deleteError = signal('');
@@ -209,10 +216,10 @@ export class CheckinsComponent implements OnInit {
 
     this.recommendationBusyId.set(item.id);
     this.clearMessages();
-    this.recommendationsApi.recommend(item.id).subscribe({
+    this.recommendationsApi.recommend(item.id, this.availableMinutes() ?? undefined).subscribe({
       next: recommendation => {
         this.recommendationBusyId.set(null);
-        this.success.set(`Recomendacion creada: ${recommendation.activity.title}`);
+        this.success.set(`Recomendacion: ${recommendation.activity.title}. ${recommendation.reason}`);
       },
       error: error => {
         this.recommendationBusyId.set(null);

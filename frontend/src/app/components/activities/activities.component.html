@@ -116,6 +116,12 @@
         <article class="panel">
           <span class="eyebrow">MICROACTIVIDADES</span>
           <h2>Explora a tu ritmo</h2>
+          <div class="filters" aria-label="Filtrar microactividades por tiempo">
+            <button type="button" class="btn secondary" [attr.aria-pressed]="availableMinutes() === null" (click)="filterByMinutes(null)">Todas las duraciones</button>
+            @for (minutes of quickMinutes; track minutes) {
+              <button type="button" class="btn secondary" [attr.aria-pressed]="availableMinutes() === minutes" (click)="filterByMinutes(minutes)">{{ minutes }} min</button>
+            }
+          </div>
           <div class="favorite-tabs" role="group" aria-label="Mostrar microactividades">
             <button type="button" class="btn secondary" [class.selected]="catalogTab() === 'all'"
                     [attr.aria-pressed]="catalogTab() === 'all'" (click)="selectCatalogTab('all')">Todas</button>
@@ -146,7 +152,7 @@
                 </div>
               } @empty {
                 <div class="empty activity-empty">
-                  <b>Aun no hay microactividades disponibles</b>
+                  <b>{{availableMinutes() === null ? "Aun no hay microactividades disponibles" : "Ninguna actividad cabe en el tiempo indicado"}}</b>
                   <p>El catalogo se mostrara aqui cuando se publiquen nuevas opciones.</p>
                 </div>
               }

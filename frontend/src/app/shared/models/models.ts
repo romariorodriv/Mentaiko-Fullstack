@@ -29,3 +29,9 @@ export interface AdminUser { id: number; name: string; email: string; birthDate:
 export interface AdminCheckin { id: number; user: { id: number; name: string; email: string }; emotion: CheckinEmotion; intensity: number; context: string; createdAt: string; }
 export interface PageResponse<T> { content: T[]; totalElements: number; totalPages: number; number: number; size: number; }
 export interface ApiError { status?: number; message?: string; errors?: Record<string,string>; }
+
+export interface PeriodSummary { week: string; count: number; averageIntensity: number; predominantEmotion: string | null; }
+export interface CompareResult { weekA: PeriodSummary; weekB: PeriodSummary; }
+export interface AdminRule { id: number; emotionId: number; emotionName: string; emotionActive: boolean; activityId: number; activityTitle: string; activityActive: boolean; priority: number; active: boolean; createdAt: string; }
+export interface CreateAdminRuleRequest { emotionId: number; activityId: number; priority: number; active?: boolean; }
+export interface UpdateAdminRuleRequest { priority?: number; active?: boolean; }
