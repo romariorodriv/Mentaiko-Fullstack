@@ -58,6 +58,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, exception.getMessage(), request, null);
     }
 
+    @ExceptionHandler(DuplicateRuleException.class)
+    public ResponseEntity<ApiError> handleDuplicateRule(DuplicateRuleException exception, WebRequest request) {
+        log.warn("Duplicate emotion-activity rule rejected path={}", pathOf(request));
+        return build(HttpStatus.CONFLICT, exception.getMessage(), request, null);
+    }
+
     @ExceptionHandler(UserInactiveException.class)
     public ResponseEntity<ApiError> handleInactiveUser(UserInactiveException exception, WebRequest request) {
         log.warn("Inactive user request rejected path={}", pathOf(request));
