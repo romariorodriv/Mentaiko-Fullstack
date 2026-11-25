@@ -13,6 +13,8 @@ export interface UpdateMicroActivityRequest { title?: string; description?: stri
 export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; helpfulnessRating?: number | null; feedbackComment?: string | null; preIntensity?: number | null; postIntensity?: number | null; }
 export interface RecommendationFeedbackRequest { helpfulnessRating: number; feedbackComment?: string; }
 export interface WeeklyPoint { label: string; count: number; averageIntensity: number; }
+export interface PeriodSummary { week: string; count: number; averageIntensity: number; predominantEmotion: string | null; }
+export interface CompareResult { weekA: PeriodSummary; weekB: PeriodSummary; }
 export interface DistributionItem { label: string; count: number; percentage: number; }
 export interface AdminIndicators { totalUsers: number; activeUsers: number; totalCheckins: number; emotionDistribution: DistributionItem[]; recommendationsGenerated: number; recommendationsCompleted: number; completionRate: number; mostFrequentEmotion: string; }
 export interface AdminDashboard { totalUsers: number; activeUsers: number; totalAdmins: number; totalCheckins: number; totalEmotions: number; totalMicroActivities: number; totalRecommendations: number; completedRecommendations: number; }

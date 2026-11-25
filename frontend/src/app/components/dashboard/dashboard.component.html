@@ -71,6 +71,43 @@
         </article>
       </section>
 
+      <section class="panel compare-panel">
+        <div class="panel-head">
+          <div>
+            <span class="eyebrow">COMPARAR PERIODOS</span>
+            <h2>Tus semanas, lado a lado</h2>
+          </div>
+          <div class="compare-pickers">
+            <label>Semana A <input type="week" [(ngModel)]="weekA" (change)="loadCompare()"></label>
+            <label>Semana B <input type="week" [(ngModel)]="weekB" (change)="loadCompare()"></label>
+          </div>
+        </div>
+
+        @if (compareLoading()) {
+          <p class="empty">Comparando tus semanas...</p>
+        } @else if (compareError()) {
+          <div class="alert error">{{ compareError() }} <button (click)="loadCompare()">Reintentar</button></div>
+        } @else if (compare(); as result) {
+          <div class="compare-grid">
+            @for (period of [result.weekA, result.weekB]; track period.week) {
+              <div class="compare-col">
+                <span class="eyebrow">{{ period.week }}</span>
+                <strong class="compare-count">{{ period.count }} {{ period.count === 1 ? 'registro' : 'registros' }}</strong>
+                @if (period.count === 0) {
+                  <p class="empty">Sin registros en esta semana.</p>
+                } @else {
+                  <p>Intensidad promedio: <b>{{ period.averageIntensity | number:'1.0-1' }}/5</b></p>
+                  <p>Emocion predominante: <b>{{ period.predominantEmotion }}</b></p>
+                  @if (isLowData(period.count)) {
+                    <small class="compare-warning">Pocos registros: interpreta este promedio con cautela.</small>
+                  }
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+
       <aside class="care-note">
         <span>*</span>
         <div>

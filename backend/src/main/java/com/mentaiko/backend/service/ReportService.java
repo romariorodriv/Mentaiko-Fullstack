@@ -22,8 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.mentaiko.backend.dto.report.CompareResponse;
 import com.mentaiko.backend.dto.report.DistributionItemResponse;
 import com.mentaiko.backend.dto.report.DistributionResponse;
+import com.mentaiko.backend.dto.report.PeriodSummaryResponse;
 import com.mentaiko.backend.dto.report.WeeklyPointResponse;
 import com.mentaiko.backend.entity.EmotionalEntry;
 import com.mentaiko.backend.entity.User;
@@ -93,6 +95,30 @@ public class ReportService {
                 distributionFor(entries, entry -> entry.getEmotion().getName()),
                 distributionFor(entries, EmotionalEntry::getContext)
         );
+    }
+
+    @Transactional(readOnly = true)
+    public CompareResponse compare(String userEmail, String weekA, String weekB) {
+        User user = findActiveUser(userEmail);
+        PeriodSummaryResponse summaryA = summarizeWeek(user, weekA);
+        PeriodSummaryResponse summaryB = summarizeWeek(user, weekB);
+        log.info("Compare report generated for user id={} weekA={} weekB={}", user.getId(), weekA, weekB);
+        return new CompareResponse(summaryA, summaryB);
+    }
+
+    private PeriodSummaryResponse summarizeWeek(User user, String week) {
+        LocalDate start = startOfWeek(week);
+        List<EmotionalEntry> entries = emotionalEntryRepository.findReportEntries(
+                user,
+                start.atStartOfDay(),
+                start.plusDays(6).atTime(LocalTime.MAX)
+        );
+        double average = entries.isEmpty()
+                ? 0
+                : roundOne(entries.stream().mapToInt(EmotionalEntry::getIntensity).average().orElse(0));
+        List<DistributionItemResponse> emotions = distributionFor(entries, entry -> entry.getEmotion().getName());
+        String predominant = emotions.isEmpty() ? null : emotions.get(0).label();
+        return new PeriodSummaryResponse(week, entries.size(), average, predominant);
     }
 
     private LocalDate startOfWeek(String value) {
