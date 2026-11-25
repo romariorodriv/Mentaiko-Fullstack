@@ -103,6 +103,38 @@
   color: var(--muted);
 }
 
+/* HU-29: valoracion y repeticion */
+.history-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: .1rem;
+}
+
+.history-star {
+  font-style: normal;
+  font-size: 1rem;
+  color: #c9d6d2;
+}
+
+.history-star.on {
+  color: #e0a82e;
+}
+
+.history-rating b {
+  margin-left: .35rem;
+  color: var(--ink);
+}
+
+.history-unrated {
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.history-inactive {
+  color: var(--muted);
+  max-width: 180px;
+}
+
 @media (max-width: 900px) {
   .history-filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
