@@ -112,6 +112,28 @@ public class RecommendationService {
                 .toList();
     }
 
+    /**
+     * HU-29: actividades realizadas por el usuario (completedAt no nulo), de la mas reciente a la mas antigua.
+     * from/to filtran por la fecha de completedAt y son inclusivos. Solo lectura: no altera la logica de recomendar.
+     */
+    @Transactional(readOnly = true)
+    public List<RecommendationResponse> listHistory(String userEmail, java.time.LocalDate from, java.time.LocalDate to) {
+        if (from != null && to != null && from.isAfter(to)) {
+            log.warn("Recommendation history rejected because date range is invalid");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "La fecha inicial no puede ser posterior a la fecha final");
+        }
+        User user = findActiveUser(userEmail);
+        List<ActivityRecommendation> history = recommendationRepository.findCompletedHistory(
+                user,
+                from == null ? null : from.atStartOfDay(),
+                to == null ? null : to.atTime(java.time.LocalTime.MAX));
+        log.debug("Recommendation history loaded for user id={} count={}", user.getId(), history.size());
+        return history.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional
     public RecommendationResponse complete(String userEmail, Long id) {
         return complete(userEmail, id, null);

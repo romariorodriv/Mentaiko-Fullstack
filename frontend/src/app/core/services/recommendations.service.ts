@@ -16,6 +16,12 @@ export class RecommendationsService {
     });
   }
   recommendations(): Observable<Recommendation[]> { return this.http.get<Recommendation[]>(`${this.base}/recommendations/me`); }
+  history(from?: string, to?: string): Observable<Recommendation[]> {
+    const params: Record<string, string> = {};
+    if (from) params['from'] = from;
+    if (to) params['to'] = to;
+    return this.http.get<Recommendation[]>(`${this.base}/recommendations/me/history`, { params });
+  }
   completeRecommendation(id: number, postIntensity?: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/complete`, postIntensity === undefined ? {} : { postIntensity }); }
   rateRecommendation(id: number, body: RecommendationFeedbackRequest): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/feedback`, body); }
   requestAlternative(id: number, body: AlternativeRecommendationRequest): Observable<Recommendation> {

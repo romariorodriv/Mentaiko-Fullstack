@@ -54,8 +54,21 @@
     <button type="button" class="btn secondary" (click)="clearFilters()"
       [disabled]="status() === 'ALL' && !from() && !to()">Limpiar filtros</button>
   </div>
+  @if (dateError()) {
+    <p class="field-error" role="alert">{{ dateError() }}</p>
+  }
 
-  @if (loading()) {
+  @if (success()) {
+    <div class="alert success" role="status">{{ success() }}</div>
+  }
+
+  @if (guide(); as currentGuide) {
+    <app-guided-activity [activity]="currentGuide" (recorded)="onRepeatRecorded()" (closed)="guide.set(null)" />
+  } @else if (guideLoading()) {
+    <p class="loading-panel" role="status">Abriendo modo guiado...</p>
+  }
+
+  @if (loading() || historyLoading()) {
     <p class="loading-panel" role="status">Cargando actividades...</p>
   } @else {
     <p class="history-count" role="status">{{ filtered().length }} registros encontrados</p>
@@ -72,6 +85,27 @@
             @if (item.completedAt) {
               <span class="status-pill done">Completada</span>
               <span>Finalizada: {{ item.completedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+              @if (item.helpfulnessRating) {
+                <span class="history-rating" [attr.aria-label]="'Valoración ' + item.helpfulnessRating + ' de 5'">
+                  @for (star of stars; track star) {<i class="history-star" [class.on]="star <= item.helpfulnessRating!">★</i>}
+                  <b>{{ item.helpfulnessRating }}/5</b>
+                </span>
+              } @else {
+                <span class="history-unrated">Sin valorar</span>
+                <div class="star-group" role="radiogroup" [attr.aria-label]="'Valorar ' + item.activity.title + ' de 1 a 5'">
+                  @for (star of stars; track star) {
+                    <button type="button" class="star" role="radio" [attr.aria-checked]="false"
+                      [attr.aria-label]="star + ' de 5'" [disabled]="ratingBusyId() !== null"
+                      (click)="rate(item, star)">★</button>
+                  }
+                </div>
+              }
+              <button type="button" class="btn secondary history-repeat" (click)="repeat(item)"
+                [disabled]="!item.activity.active || guideLoading() || guide() !== null"
+                [attr.aria-describedby]="item.activity.active ? null : 'inactive-' + item.id">Repetir</button>
+              @if (!item.activity.active) {
+                <small class="history-inactive" [id]="'inactive-' + item.id">Esta microactividad ya no está disponible.</small>
+              }
             } @else if (item.discardedAt) {
               <span class="status-pill">Descartada</span>
               <span>{{ item.discardedAt | date: 'dd/MM/yyyy HH:mm' }}</span>

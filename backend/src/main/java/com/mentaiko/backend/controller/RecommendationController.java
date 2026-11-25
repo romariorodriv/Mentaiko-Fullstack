@@ -1,5 +1,6 @@
 package com.mentaiko.backend.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,6 +43,16 @@ public class RecommendationController {
     @GetMapping("/api/recommendations/me")
     public List<RecommendationResponse> mine(Authentication authentication) {
         return recommendationService.listMine(authentication.getName());
+    }
+
+    /** HU-29: historial de actividades realizadas del usuario autenticado (nunca recibe userId). */
+    @GetMapping("/api/recommendations/me/history")
+    public List<RecommendationResponse> history(
+            Authentication authentication,
+            @RequestParam(required = false) LocalDate from,
+            @RequestParam(required = false) LocalDate to
+    ) {
+        return recommendationService.listHistory(authentication.getName(), from, to);
     }
 
     @PostMapping("/api/recommendations/{id}/complete")
