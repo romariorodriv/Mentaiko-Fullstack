@@ -33,6 +33,12 @@ Plataforma web universitaria de bienestar emocional.
 | HU12 Reporte emocional semanal | Implementada |
 | HU13 Distribucion emocional | Implementada |
 | HU14 Indicadores administrativos anonimizados | Implementada |
+| HU33 Reglas de recomendacion configurables por el administrador | Implementada |
+
+### HU33: reglas emocion -> microactividad
+
+Un ADMIN gestiona en `/app/admin/reglas` (API `GET/POST /api/admin/rules` y `PUT /api/admin/rules/{id}`) que microactividades se recomiendan para cada emocion, con prioridad numerica (1 es la mas alta) y estado activo/inactivo. El motor de recomendaciones ya consume las reglas activas ordenadas por prioridad; si no queda ninguna activa para la emocion, recomienda una actividad activa del catalogo. Las recomendaciones ya emitidas guardan la actividad elegida, por lo que cambiar una regla no las altera. No requiere migracion: usa la tabla existente `emotion_activity_rules`.
+
 | HU22 Preferencias de tipos de actividad | Implementada |
 
 ### HU22: equivalencia de categorias con Jira
