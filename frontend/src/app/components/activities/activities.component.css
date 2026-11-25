@@ -1,1 +1,10 @@
 /* Los estilos compartidos permanecen en src/styles.css. */
+
+.favorite-toggle { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; border: 1px solid currentColor; border-radius: .6rem; background: transparent; padding: .42rem .7rem; font: inherit; font-size: .85rem; cursor: pointer; }
+.favorite-toggle span { font-size: 1.15rem; line-height: 1; }
+.favorite-toggle.selected { color: #926520; }
+.favorite-toggle:disabled { cursor: not-allowed; opacity: .55; }
+.favorite-toggle:focus-visible { outline: 3px solid #3673ac; outline-offset: 3px; }
+
+.favorite-tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 1rem; }
+.favorite-tabs .selected { border: 2px solid currentColor; font-weight: 700; }

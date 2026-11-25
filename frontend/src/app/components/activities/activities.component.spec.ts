@@ -40,11 +40,88 @@ describe('ActivitiesComponent', () => {
     fixture.detectChanges();
     http.expectOne(request => request.url === '/api/micro-activities').flush([activity]);
     http.expectOne('/api/recommendations/me').flush(recommendations);
+    http.expectOne('/api/micro-activities/favorites').flush([]);
     fixture.detectChanges();
     return fixture;
   }
 
   afterEach(() => http.verify());
+
+  describe('favoritas (HU-24)', () => {
+    it('adds a favorite and updates the accessible star', () => {
+      const fixture = createWith([]);
+      const component = fixture.componentInstance;
+      component.toggleFavorite(activity);
+      const add = http.expectOne('/api/micro-activities/1/favorite');
+      expect(add.request.method).toBe('POST');
+      add.flush({ ...activity, savedAt: '2026-11-23T12:00:00' });
+      fixture.detectChanges();
+      expect(component.isFavorite(activity.id)).toBe(true);
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector('.favorite-toggle');
+      expect(button.getAttribute('aria-pressed')).toBe('true');
+      expect(button.getAttribute('aria-label')).toContain('Quitar de favoritas');
+    });
+
+    it('removes the favorite only after the backend confirms', () => {
+      const fixture = createWith([]);
+      const component = fixture.componentInstance;
+      component.favorites.set([{...activity, activityType: 'GENERAL', savedAt: '2026-11-23T12:00:00'}]);
+      component.toggleFavorite(activity);
+      const remove = http.expectOne('/api/micro-activities/1/favorite');
+      expect(remove.request.method).toBe('DELETE');
+      expect(component.isFavorite(activity.id)).toBe(true);
+      remove.flush(null);
+      expect(component.isFavorite(activity.id)).toBe(false);
+    });
+
+    it('preserves the favorite state after a failed remove', () => {
+      const fixture = createWith([]);
+      const component = fixture.componentInstance;
+      component.favorites.set([{...activity, activityType: 'GENERAL', savedAt: '2026-11-23T12:00:00'}]);
+      component.toggleFavorite(activity);
+      http.expectOne('/api/micro-activities/1/favorite')
+        .flush({message: 'Error'}, {status: 500, statusText: 'Server Error'});
+      expect(component.isFavorite(activity.id)).toBe(true);
+      expect(component.error()).toContain('No se pudo actualizar');
+      expect(component.favoriteBusyId()).toBeNull();
+    });
+  });
+
+  describe('vista Mis Favoritas (HU-24)', () => {
+    it('shows an empty state distinct from an API failure', () => {
+      const fixture = createWith([]);
+      fixture.componentInstance.selectCatalogTab('favorites');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Todavia no tienes favoritas');
+    });
+
+    it('shows saved activities and removes them from the favorites tab', () => {
+      const fixture = createWith([]);
+      const component = fixture.componentInstance;
+      component.favorites.set([{...activity, activityType:'GENERAL', savedAt:'2026-11-23T12:00:00'}]);
+      component.selectCatalogTab('favorites');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('[aria-label="Mis microactividades favoritas"]')).not.toBeNull();
+      component.toggleFavorite(activity);
+      http.expectOne('/api/micro-activities/1/favorite').flush(null);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Todavia no tienes favoritas');
+    });
+
+    it('keeps the empty state hidden on failed favorites load and allows retry', () => {
+      const fixture = createWith([]);
+      const component = fixture.componentInstance;
+      component.selectCatalogTab('favorites');
+      component.favoritesError.set('No se pudieron cargar tus favoritas.');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).not.toContain('Todavia no tienes favoritas');
+      expect(fixture.nativeElement.textContent).toContain('Reintentar');
+      component.loadFavorites();
+      http.expectOne('/api/micro-activities/favorites').flush([]);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain('Todavia no tienes favoritas');
+    });
+  });
 
   describe('valoracion de utilidad (HU-27)', () => {
     it('shows the rating controls only for completed activities', () => {

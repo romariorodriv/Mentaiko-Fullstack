@@ -1,7 +1,7 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { ActivitiesService } from '../../core/services/activities.service';
 import { RecommendationsService } from '../../core/services/recommendations.service';
-import { MicroActivity, Recommendation } from '../../shared/models/models';
+import { FavoriteMicroActivity, MicroActivity, Recommendation } from '../../shared/models/models';
 
 @Component({
   selector: 'app-activities',
@@ -11,8 +11,6 @@ import { MicroActivity, Recommendation } from '../../shared/models/models';
 })
 export class ActivitiesComponent implements OnInit {
   readonly activities = signal<MicroActivity[]>([]);
-  readonly recommendations = signal<Recommendation[]>([]);
-  readonly loading = signal(true);
   readonly availableMinutes = signal<number | null>(null);
   readonly quickMinutes = [2, 5, 10] as const;
 
@@ -20,7 +18,17 @@ export class ActivitiesComponent implements OnInit {
     this.availableMinutes.set(minutes);
     this.load();
   }
+  readonly recommendations = signal<Recommendation[]>([]);
+  readonly favorites = signal<FavoriteMicroActivity[]>([]);
+  readonly catalogTab = signal<'all' | 'favorites'>('all');
 
+  selectCatalogTab(tab: 'all' | 'favorites'): void {
+    this.catalogTab.set(tab);
+  }
+  readonly favoritesLoading = signal(true);
+  readonly favoritesError = signal('');
+  readonly favoriteBusyId = signal<number | null>(null);
+  readonly loading = signal(true);
   readonly busyId = signal<number | null>(null);
   readonly feedbackBusyId = signal<number | null>(null);
   readonly stars = [1, 2, 3, 4, 5];
@@ -34,6 +42,60 @@ export class ActivitiesComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.loadFavorites();
+  }
+
+  loadFavorites(): void {
+    this.favoritesLoading.set(true);
+    this.favoritesError.set('');
+    this.activitiesApi.favorites().subscribe({
+      next: items => {
+        this.favorites.set(items);
+        this.favoritesLoading.set(false);
+      },
+      error: () => {
+        this.favoritesLoading.set(false);
+        this.favoritesError.set('No se pudieron cargar tus favoritas.');
+      }
+    });
+  }
+
+  isFavorite(id: number): boolean {
+    return this.favorites().some(item => item.id === id);
+  }
+
+  toggleFavorite(activity: Pick<MicroActivity, 'id' | 'title'>): void {
+    if (this.favoriteBusyId() !== null || this.favoritesLoading() || this.favoritesError()) {
+      return;
+    }
+    const wasFavorite = this.isFavorite(activity.id);
+    this.favoriteBusyId.set(activity.id);
+    this.error.set('');
+    this.success.set('');
+    if (wasFavorite) {
+      this.activitiesApi.removeFavorite(activity.id).subscribe({
+        next: () => {
+          this.favoriteBusyId.set(null);
+          this.favorites.update(items => items.filter(item => item.id !== activity.id));
+          this.success.set('Microactividad retirada de favoritas.');
+        },
+        error: () => this.handleFavoriteError()
+      });
+    } else {
+      this.activitiesApi.addFavorite(activity.id).subscribe({
+        next: favorite => {
+          this.favoriteBusyId.set(null);
+          this.favorites.update(items => [...items.filter(item => item.id !== activity.id), favorite]);
+          this.success.set('Microactividad guardada en favoritas.');
+        },
+        error: () => this.handleFavoriteError()
+      });
+    }
+  }
+
+  private handleFavoriteError(): void {
+    this.favoriteBusyId.set(null);
+    this.error.set('No se pudo actualizar la actividad favorita. Intenta nuevamente.');
   }
 
   load(): void {

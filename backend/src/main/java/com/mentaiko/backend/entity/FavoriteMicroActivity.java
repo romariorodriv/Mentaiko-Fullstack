@@ -15,10 +15,10 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "favorite_micro_activities",
+@Table(name = "user_favorite_activities",
         uniqueConstraints = @UniqueConstraint(
-                name = "uk_favorite_micro_activity_user_activity",
-                columnNames = {"user_id", "micro_activity_id"}))
+                name = "uk_user_favorite_activities_user_activity",
+                columnNames = {"user_id", "activity_id"}))
 public class FavoriteMicroActivity {
 
     @Id
@@ -30,7 +30,7 @@ public class FavoriteMicroActivity {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "micro_activity_id", nullable = false)
+    @JoinColumn(name = "activity_id", nullable = false)
     private MicroActivity activity;
 
     @Column(name = "created_at", nullable = false, updatable = false)
