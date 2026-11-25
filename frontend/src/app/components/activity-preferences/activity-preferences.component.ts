@@ -1,5 +1,6 @@
 import {Component,OnInit,inject,signal} from '@angular/core';
 import {ActivityPreferencesApi} from '../../core/services/activity-preferences-api.service';
+import {activityTypeLabel} from '../../shared/models/activity-types';
 
 @Component({
  selector:'app-activity-preferences',standalone:true,
@@ -12,12 +13,8 @@ export class ActivityPreferencesComponent implements OnInit {
  readonly selected=signal<string[]>([]);
  readonly ready=signal(false);readonly loading=signal(false);readonly saving=signal(false);
  readonly error=signal('');readonly message=signal('');
- private readonly names:Record<string,string>={
-   GENERAL:'General',RESPIRACION:'Respiración',MOVIMIENTO:'Movimiento',
-   RELAJACION:'Relajación',ESCRITURA:'Escritura',ATENCION_PLENA:'Atención plena'
- };
  ngOnInit(){this.load();}
- label(type:string){return this.names[type]??type;}
+ label(type:string){return activityTypeLabel(type);}
  load(){
    this.loading.set(true);this.error.set('');
    this.api.get().subscribe({

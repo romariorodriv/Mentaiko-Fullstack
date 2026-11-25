@@ -2,15 +2,27 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ConfirmFocusSessionRequest, CreateMicroActivityRequest, FocusSession, GuidedMicroActivity, MicroActivity, UpdateMicroActivityRequest } from '../../shared/models/models';
+import { MicroActivity, FavoriteMicroActivity, ConfirmFocusSessionRequest, FocusSession, GuidedMicroActivity, CreateMicroActivityRequest, UpdateMicroActivityRequest } from '../../shared/models/models';
 
 @Injectable({ providedIn: 'root' })
 export class ActivitiesService {
   private readonly base = environment.apiUrl;
   constructor(private readonly http: HttpClient) {}
 
-  activities(activeOnly = true): Observable<MicroActivity[]> { return this.http.get<MicroActivity[]>(`${this.base}/micro-activities`, {params: {activeOnly}}); }
-
+  activities(activeOnly = true, maxDuration?: number): Observable<MicroActivity[]> {
+    return this.http.get<MicroActivity[]>(`${this.base}/micro-activities`, {
+      params: {...{activeOnly}, ...(maxDuration === undefined ? {} : {maxDuration})}
+    });
+  }
+  favorites(): Observable<FavoriteMicroActivity[]> {
+    return this.http.get<FavoriteMicroActivity[]>(`${this.base}/micro-activities/favorites`);
+  }
+  addFavorite(id: number): Observable<FavoriteMicroActivity> {
+    return this.http.post<FavoriteMicroActivity>(`${this.base}/micro-activities/${id}/favorite`, {});
+  }
+  removeFavorite(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/micro-activities/${id}/favorite`);
+  }
   activityGuide(id: number): Observable<GuidedMicroActivity> {
     return this.http.get<GuidedMicroActivity>(`${this.base}/micro-activities/${id}`);
   }

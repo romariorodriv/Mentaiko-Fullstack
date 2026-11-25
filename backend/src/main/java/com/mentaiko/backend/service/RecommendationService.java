@@ -58,6 +58,14 @@ public class RecommendationService {
 
     @Transactional
     public RecommendationResponse recommend(String userEmail, Long checkinId) {
+        return recommend(userEmail, checkinId, null);
+    }
+
+    @Transactional
+    public RecommendationResponse recommend(String userEmail, Long checkinId, Integer maxDurationMinutes) {
+        if (maxDurationMinutes != null && (maxDurationMinutes < 1 || maxDurationMinutes > 120)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El tiempo debe estar entre 1 y 120 minutos");
+        }
         User user = findActiveUser(userEmail);
         EmotionalEntry checkin = emotionalEntryRepository.findByIdAndUserWithEmotion(checkinId, user)
                 .orElseThrow(() -> {
@@ -70,9 +78,14 @@ public class RecommendationService {
                 .map(recommendation -> {
                     log.debug("Existing recommendation id={} returned for check-in id={}",
                             recommendation.getId(), checkinId);
+                    if (maxDurationMinutes != null && !recommendation.isFallbackUsed()
+                            && recommendation.getActivity().getDurationMinutes() > maxDurationMinutes) {
+                        throw new ResponseStatusException(HttpStatus.CONFLICT,
+                                "Este check-in ya tiene una recomendacion de mayor duracion; conserva la recomendacion original");
+                    }
                     return toResponse(recommendation);
                 })
-                .orElseGet(() -> createRecommendation(user, checkin));
+                .orElseGet(() -> createRecommendation(user, checkin, maxDurationMinutes));
     }
 
     @Transactional(readOnly = true)
@@ -149,9 +162,9 @@ public class RecommendationService {
         return toResponse(recommendation);
     }
 
-    private RecommendationResponse createRecommendation(User user, EmotionalEntry checkin) {
+    private RecommendationResponse createRecommendation(User user, EmotionalEntry checkin, Integer maxDurationMinutes) {
         Emotion emotion = checkin.getEmotion();
-        ActivityChoice choice = chooseActivity(emotion, user);
+        ActivityChoice choice = chooseActivity(emotion, user, maxDurationMinutes);
 
         ActivityRecommendation recommendation = new ActivityRecommendation();
         recommendation.setUser(user);
@@ -159,7 +172,11 @@ public class RecommendationService {
         recommendation.setActivity(choice.activity());
         recommendation.setFallbackUsed(choice.fallbackUsed());
         recommendation.setReason(choice.fallbackUsed()
-                ? "No hay una regla activa para " + emotion.getName() + "; sugerimos una actividad activa del catalogo."
+                ? (maxDurationMinutes == null
+                    ? "No hay una regla activa para " + emotion.getName() + "; sugerimos una actividad activa del catalogo."
+                    : "No existe una regla compatible con " + maxDurationMinutes
+                        + " minutos; sugerimos la microactividad activa mas corta de "
+                        + choice.activity().getDurationMinutes() + " minutos.")
                 : "Recomendacion asociada a la emocion " + emotion.getName() + ".");
 
         ActivityRecommendation savedRecommendation = recommendationRepository.save(recommendation);
@@ -172,7 +189,7 @@ public class RecommendationService {
         return toResponse(savedRecommendation);
     }
 
-    private ActivityChoice chooseActivity(Emotion emotion, User user) {
+    private ActivityChoice chooseActivity(Emotion emotion, User user, Integer maxDurationMinutes) {
         List<String> preferredTypes = jdbc.query(
                 "SELECT activity_type FROM activity_preferences WHERE user_id=?",
                 (rs, row) -> rs.getString(1), user.getId());
@@ -181,11 +198,14 @@ public class RecommendationService {
         var rules = ruleRepository
                 .findByEmotionAndActiveTrueAndActivityActiveTrueOrderByPriorityAscActivityTitleAscActivityIdAsc(emotion);
         // If no preferences exist, preserve the original first-by-priority rule.
-        if (!rules.isEmpty()) {
-            var selected = preferred.isEmpty() ? rules.get(0)
-                    : rules.stream()
+        var compatibleRules = maxDurationMinutes == null ? rules : rules.stream()
+                .filter(rule -> rule.getActivity().getDurationMinutes() <= maxDurationMinutes)
+                .toList();
+        if (!compatibleRules.isEmpty()) {
+            var selected = preferred.isEmpty() ? compatibleRules.get(0)
+                    : compatibleRules.stream()
                         .filter(rule -> preferred.contains(rule.getActivity().getActivityType()))
-                        .findFirst().orElse(rules.get(0));
+                        .findFirst().orElse(compatibleRules.get(0));
             return new ActivityChoice(selected.getActivity(), false);
         }
 
@@ -194,9 +214,14 @@ public class RecommendationService {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
                     "No hay microactividades activas disponibles");
         }
-        var selected = preferred.isEmpty() ? active.get(0)
-                : active.stream().filter(activity -> preferred.contains(activity.getActivityType()))
-                    .findFirst().orElse(active.get(0));
+        var selected = maxDurationMinutes == null
+                ? (preferred.isEmpty() ? active.get(0)
+                    : active.stream().filter(activity -> preferred.contains(activity.getActivityType()))
+                        .findFirst().orElse(active.get(0)))
+                : active.stream().min(java.util.Comparator
+                    .comparing(MicroActivity::getDurationMinutes)
+                    .thenComparing(MicroActivity::getTitle)
+                    .thenComparing(MicroActivity::getId)).orElseThrow();
         return new ActivityChoice(selected, true);
     }
 

@@ -24,7 +24,7 @@ class ActivityPreferenceServiceTest {
         for(List<String> invalid:List.of(
               List.of("NO_EXISTE"),List.of("MOVIMIENTO","MOVIMIENTO"),
               List.of("GENERAL","RESPIRACION","MOVIMIENTO","RELAJACION",
-                      "ESCRITURA","ATENCION_PLENA","GENERAL"))) {
+                      "ESCRITURA","ATENCION_PLENA","DESCANSO_OCULAR","GENERAL"))) {
             assertThatThrownBy(()->service.update("student@example.com",invalid))
               .isInstanceOf(ResponseStatusException.class)
               .satisfies(error->assertThat(((ResponseStatusException)error).getStatusCode())
@@ -36,6 +36,6 @@ class ActivityPreferenceServiceTest {
     @Test
     void exposesExpectedCategoriesInStableOrder() {
         assertThat(ActivityPreferenceService.TYPES).containsExactly(
-          "RESPIRACION","MOVIMIENTO","RELAJACION","ESCRITURA","ATENCION_PLENA","GENERAL");
+          "RESPIRACION","MOVIMIENTO","RELAJACION","ESCRITURA","ATENCION_PLENA","DESCANSO_OCULAR","GENERAL");
     }
 }
