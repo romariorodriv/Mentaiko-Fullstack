@@ -20,4 +20,6 @@ public interface MicroActivityRepository extends JpaRepository<MicroActivity, Lo
     List<MicroActivity> findByActiveTrueAndDurationMinutesLessThanEqualOrderByDurationMinutesAscTitleAscIdAsc(Integer maxDurationMinutes);
 
     Optional<MicroActivity> findFirstByActiveTrueOrderByTitleAscIdAsc();
+
+    Optional<MicroActivity> findByIdAndActiveTrue(Long id);
 }

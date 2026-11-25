@@ -21,6 +21,8 @@ Base local: `http://localhost:8080/api`
 | 12 | GET | `/reports/weekly?week=YYYY-Www` | Resumen semanal |
 | 13 | GET | `/reports/distribution?from=&to=` | Distribucion personal |
 | 14 | GET | `/admin/indicators` | Indicadores anonimizados |
+| 26 | GET | `/micro-activities/{id}` | Obtener etapas y duración del modo guiado |
+| 26 | POST | `/focus-sessions` | Confirmar y guardar una sesión guiada |
 
 ## Respuestas importantes
 
@@ -356,6 +358,16 @@ Archivos principales:
 
 - Backend: `MicroActivity`, `MicroActivityRepository`, DTO de microactividades, `MicroActivityService`, `MicroActivityController`, `MicroActivityIntegrationTest`.
 - Frontend: `ActivitiesComponent`, `AdminActivitiesComponent`, `ApiService.activities`, `ApiService.createActivity`, `ApiService.updateActivity`.
+
+## HU26 - Realizar una microactividad guiada
+
+`GET /api/micro-activities/{id}` requiere sesión y devuelve `id`, `title`, `durationMinutes` y `steps` con `title` e `instruction`. Las actividades inactivas o inexistentes devuelven `404`.
+
+Tras terminar el temporizador y pulsar **Confirmar realización**, el cliente envía `POST /api/focus-sessions` con `requestId` (UUID generado por el cliente), `activityId`, `durationSeconds` y `recommendationId` opcional. Si se proporciona una recomendación, debe pertenecer al usuario y apuntar a la misma actividad. El backend confirma la recomendación en la misma transacción que guarda la sesión.
+
+El endpoint devuelve `201` con `id`, `activityId`, `recommendationId`, `durationSeconds` y `completedAt`. Se reutiliza el UUID al reintentar el mismo guardado. Si la duración del catálogo cambió al confirmar, devuelve `409` y se puede abrir la guía de nuevo.
+
+Aplica `database/013_focus_sessions.sql` a las bases PostgreSQL existentes antes de iniciar la versión con HU-26.
 
 ## HU10 - Recibir una recomendacion de bienestar
 

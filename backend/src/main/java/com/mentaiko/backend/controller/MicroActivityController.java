@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.mentaiko.backend.dto.microactivity.CreateMicroActivityRequest;
+import com.mentaiko.backend.dto.microactivity.GuidedMicroActivityResponse;
 import com.mentaiko.backend.dto.microactivity.MicroActivityResponse;
 import com.mentaiko.backend.dto.microactivity.FavoriteMicroActivityResponse;
 import com.mentaiko.backend.dto.microactivity.UpdateMicroActivityRequest;
@@ -70,6 +71,11 @@ public class MicroActivityController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void unfavorite(@PathVariable Long id, Authentication authentication) {
         favoriteService.remove(authentication.getName(), id);
+    }
+
+    @GetMapping("/api/micro-activities/{id}")
+    public GuidedMicroActivityResponse guide(@PathVariable Long id) {
+        return microActivityService.guide(id);
     }
 
     @PostMapping("/api/admin/micro-activities")

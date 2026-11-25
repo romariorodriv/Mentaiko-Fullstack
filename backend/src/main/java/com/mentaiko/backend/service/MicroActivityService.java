@@ -12,6 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.mentaiko.backend.dto.microactivity.CreateMicroActivityRequest;
+import com.mentaiko.backend.dto.microactivity.GuidedMicroActivityResponse;
+import com.mentaiko.backend.dto.microactivity.GuidedMicroActivityResponse.GuideStep;
 import com.mentaiko.backend.dto.microactivity.MicroActivityResponse;
 import com.mentaiko.backend.dto.microactivity.UpdateMicroActivityRequest;
 import com.mentaiko.backend.entity.MicroActivity;
@@ -36,6 +38,22 @@ public class MicroActivityService {
                 : microActivityRepository.findAllByOrderByTitleAscIdAsc();
         log.debug("Micro-activity catalog loaded with activeOnly={} and count={}", activeOnly, activities.size());
         return activities.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public GuidedMicroActivityResponse guide(Long id) {
+        MicroActivity activity = findActive(id);
+        return new GuidedMicroActivityResponse(activity.getId(), activity.getTitle(), activity.getDurationMinutes(),
+                List.of(
+                        new GuideStep("Prepárate", "Elige un momento y un espacio donde puedas realizar la actividad con comodidad."),
+                        new GuideStep("Realiza la actividad", activity.getDescription()),
+                        new GuideStep("Cierra la pausa", "Tómate un momento para notar cómo te sientes y retomar tu día a tu ritmo.")
+                ));
+    }
+
+    MicroActivity findActive(Long id) {
+        return microActivityRepository.findByIdAndActiveTrue(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Microactividad no encontrada"));
     }
 
     @Transactional

@@ -35,3 +35,22 @@ export interface CompareResult { weekA: PeriodSummary; weekB: PeriodSummary; }
 export interface AdminRule { id: number; emotionId: number; emotionName: string; emotionActive: boolean; activityId: number; activityTitle: string; activityActive: boolean; priority: number; active: boolean; createdAt: string; }
 export interface CreateAdminRuleRequest { emotionId: number; activityId: number; priority: number; active?: boolean; }
 export interface UpdateAdminRuleRequest { priority?: number; active?: boolean; }
+export interface GuidedMicroActivity {
+  id: number;
+  title: string;
+  durationMinutes: number;
+  steps: { title: string; instruction: string }[];
+}
+export interface ConfirmFocusSessionRequest {
+  requestId: string;
+  activityId: number;
+  recommendationId?: number;
+  durationSeconds: number;
+}
+export interface FocusSession {
+  id: number;
+  activityId: number;
+  recommendationId: number | null;
+  durationSeconds: number;
+  completedAt: string;
+}

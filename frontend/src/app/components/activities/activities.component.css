@@ -8,3 +8,5 @@
 
 .favorite-tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: .8rem 0 1rem; }
 .favorite-tabs .selected { border: 2px solid currentColor; font-weight: 700; }
+
+.guide-launch { margin-block-start: .55rem; }
