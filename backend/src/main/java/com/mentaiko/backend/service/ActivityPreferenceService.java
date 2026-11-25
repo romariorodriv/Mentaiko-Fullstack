@@ -13,7 +13,7 @@ import com.mentaiko.backend.repository.UserRepository;
 @Service
 public class ActivityPreferenceService {
     public static final List<String> TYPES = List.of(
-       "RESPIRACION","MOVIMIENTO","RELAJACION","ESCRITURA","ATENCION_PLENA","GENERAL");
+       "RESPIRACION","MOVIMIENTO","RELAJACION","ESCRITURA","ATENCION_PLENA","DESCANSO_OCULAR","GENERAL");
     private final JdbcTemplate jdbc;
     private final UserRepository users;
     public record Preferences(List<String> selected, List<String> available) {}
