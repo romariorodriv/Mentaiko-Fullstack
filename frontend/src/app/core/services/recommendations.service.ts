@@ -9,7 +9,12 @@ export class RecommendationsService {
   private readonly base = environment.apiUrl;
   constructor(private readonly http: HttpClient) {}
 
-  recommend(checkinId: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations`, {checkinId}); }
+  recommend(checkinId: number, maxDurationMinutes?: number): Observable<Recommendation> {
+    return this.http.post<Recommendation>(`${this.base}/recommendations`, {
+      checkinId,
+      ...(maxDurationMinutes === undefined ? {} : {maxDurationMinutes})
+    });
+  }
   recommendations(): Observable<Recommendation[]> { return this.http.get<Recommendation[]>(`${this.base}/recommendations/me`); }
   completeRecommendation(id: number, postIntensity?: number): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/complete`, postIntensity === undefined ? {} : { postIntensity }); }
   rateRecommendation(id: number, body: RecommendationFeedbackRequest): Observable<Recommendation> { return this.http.post<Recommendation>(`${this.base}/recommendations/${id}/feedback`, body); }
