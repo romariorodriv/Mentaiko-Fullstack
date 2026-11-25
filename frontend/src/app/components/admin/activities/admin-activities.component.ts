@@ -3,6 +3,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivitiesService } from '../../../core/services/activities.service';
 import { ApiError, MicroActivity, UpdateMicroActivityRequest } from '../../../shared/models/models';
+import { ACTIVITY_TYPE_LABELS } from '../../../shared/models/activity-types';
 
 @Component({
   selector: 'app-admin-activities',
@@ -14,14 +15,7 @@ import { ApiError, MicroActivity, UpdateMicroActivityRequest } from '../../../sh
 export class AdminActivitiesComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
 
-  readonly activityTypes = [
-    {value:'GENERAL',label:'General'},
-    {value:'RESPIRACION',label:'Respiración'},
-    {value:'MOVIMIENTO',label:'Movimiento'},
-    {value:'RELAJACION',label:'Relajación'},
-    {value:'ESCRITURA',label:'Escritura'},
-    {value:'ATENCION_PLENA',label:'Atención plena'}
-  ];
+  readonly activityTypes = Object.entries(ACTIVITY_TYPE_LABELS).map(([value,label]) => ({value,label}));
   readonly items = signal<MicroActivity[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);

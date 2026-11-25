@@ -4,8 +4,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmotionsService } from '../../core/services/emotions.service';
 import { CheckinsService } from '../../core/services/checkins.service';
 import { RecommendationsService } from '../../core/services/recommendations.service';
-import { ApiError, Checkin, Emotion, Recommendation } from '../../shared/models/models';
 import { RecommendationAlternativeComponent } from '../recommendation-alternative/recommendation-alternative.component';
+import { ApiError, Checkin, Emotion, Recommendation } from '../../shared/models/models';
 
 @Component({
   selector: 'app-checkins',
@@ -36,6 +36,13 @@ export class CheckinsComponent implements OnInit {
   readonly recommendationBusyId = signal<number | null>(null);
   readonly recommendationPreview = signal<Recommendation | null>(null);
   readonly alternativeBusy = signal(false);
+  readonly availableMinutes = signal<number | null>(null);
+  readonly quickMinutes = [2, 5, 10] as const;
+
+  selectAvailableMinutes(minutes: number | null): void {
+    this.availableMinutes.set(minutes);
+  }
+
   readonly deleteTarget = signal<Checkin | null>(null);
   readonly deleting = signal(false);
   readonly deleteError = signal('');
@@ -212,9 +219,10 @@ export class CheckinsComponent implements OnInit {
 
     this.recommendationBusyId.set(item.id);
     this.clearMessages();
-    this.recommendationsApi.recommend(item.id).subscribe({
+    this.recommendationsApi.recommend(item.id, this.availableMinutes() ?? undefined).subscribe({
       next: recommendation => {
         this.recommendationBusyId.set(null);
+        this.success.set(`Recomendacion: ${recommendation.activity.title}. ${recommendation.reason}`);
         this.recommendationPreview.set(recommendation);
       },
       error: error => {

@@ -15,6 +15,13 @@
       <div class="alert success" role="status">{{ success() }}</div>
     }
 
+    @if (guide(); as currentGuide) {
+      <app-guided-activity [activity]="currentGuide.activity" [recommendationId]="currentGuide.recommendationId"
+        (recorded)="onFocusSessionRecorded($event)" (closed)="guide.set(null)" />
+    } @else if (guideLoading()) {
+      <p class="loading-panel" role="status">Cargando guía de la actividad…</p>
+    }
+
     @if (loading()) {
       <div class="loading-panel">Cargando microactividades...</div>
     } @else {
@@ -30,15 +37,19 @@
                   <h3>{{ recommendation.activity.title }}</h3>
                   <p>{{ recommendation.activity.description }}</p>
                   <small>{{ recommendation.reason }}</small>
+                  @if (!recommendation.completedAt && recommendation.activity.active) {
+                    <button type="button" class="btn secondary guide-launch" (click)="openGuide(recommendation.activity.id, recommendation.id)"
+                            [disabled]="guideLoading() || guide() !== null || busyId() === recommendation.id">Modo guiado</button>
+                  }
                 </div>
                 @if (recommendation.completedAt) {
                   <span class="status-pill done">Completada</span>
                 } @else {
-                  <button class="btn secondary" (click)="complete(recommendation)" [disabled]="busyId() !== null || alternativeBusyId() !== null">
+                  <button class="btn secondary" (click)="complete(recommendation)" [disabled]="busyId() !== null || alternativeBusyId() !== null || guide()?.recommendationId === recommendation.id">
                     {{ busyId() === recommendation.id ? 'Guardando...' : 'Marcar completa' }}
                   </button>
                   <app-recommendation-alternative [recommendationId]="recommendation.id"
-                    [disabled]="busyId() !== null || (alternativeBusyId() !== null && alternativeBusyId() !== recommendation.id)"
+                    [disabled]="busyId() !== null || guide() !== null || (alternativeBusyId() !== null && alternativeBusyId() !== recommendation.id)"
                     (busyChange)="alternativeBusyId.set($event ? recommendation.id : null)"
                     (replacement)="replaceRecommendation(recommendation, $event)" />
                 }
@@ -118,22 +129,81 @@
         </article>
 
         <article class="panel">
-          <span class="eyebrow">CATALOGO ACTIVO</span>
+          <span class="eyebrow">MICROACTIVIDADES</span>
           <h2>Explora a tu ritmo</h2>
-          <div class="activity-catalog-grid compact" aria-label="Catalogo de microactividades activas">
-            @for (activity of activities(); track activity.id) {
-              <div class="compact-activity">
-                <span>{{ activity.durationMinutes }} min</span>
-                <b>{{ activity.title }}</b>
-                <p>{{ activity.description }}</p>
-              </div>
-            } @empty {
-              <div class="empty activity-empty">
-                <b>Aun no hay microactividades disponibles</b>
-                <p>El catalogo se mostrara aqui cuando se publiquen nuevas opciones.</p>
-              </div>
+          <div class="filters" aria-label="Filtrar microactividades por tiempo">
+            <button type="button" class="btn secondary" [attr.aria-pressed]="availableMinutes() === null" (click)="filterByMinutes(null)">Todas las duraciones</button>
+            @for (minutes of quickMinutes; track minutes) {
+              <button type="button" class="btn secondary" [attr.aria-pressed]="availableMinutes() === minutes" (click)="filterByMinutes(minutes)">{{ minutes }} min</button>
             }
           </div>
+          <div class="favorite-tabs" role="group" aria-label="Mostrar microactividades">
+            <button type="button" class="btn secondary" [class.selected]="catalogTab() === 'all'"
+                    [attr.aria-pressed]="catalogTab() === 'all'" (click)="selectCatalogTab('all')">Todas</button>
+            <button type="button" class="btn secondary" [class.selected]="catalogTab() === 'favorites'"
+                    [attr.aria-pressed]="catalogTab() === 'favorites'" (click)="selectCatalogTab('favorites')">Mis Favoritas</button>
+          </div>
+          @if (favoritesError()) {
+            <div class="alert error" role="alert">
+              {{ favoritesError() }}
+              <button type="button" (click)="loadFavorites()">Reintentar</button>
+            </div>
+          }
+          @if (catalogTab() === 'all') {
+            <div class="activity-catalog-grid compact" aria-label="Catalogo de microactividades activas">
+              @for (activity of activities(); track activity.id) {
+                <div class="compact-activity">
+                  <span>{{ activity.durationMinutes }} min</span>
+                  <b>{{ activity.title }}</b>
+                  <p>{{ activity.description }}</p>
+                  <button type="button" class="btn secondary guide-launch" (click)="openGuide(activity.id)"
+                          [disabled]="guideLoading() || guide() !== null">Modo guiado</button>
+                  <button type="button" class="favorite-toggle" [class.selected]="isFavorite(activity.id)"
+                          [disabled]="favoritesLoading() || !!favoritesError() || favoriteBusyId() !== null"
+                          [attr.aria-pressed]="isFavorite(activity.id)"
+                          [attr.aria-label]="(isFavorite(activity.id) ? 'Quitar de favoritas: ' : 'Guardar en favoritas: ') + activity.title"
+                          (click)="toggleFavorite(activity)">
+                    <span aria-hidden="true">{{ isFavorite(activity.id) ? '★' : '☆' }}</span>
+                    {{ favoriteBusyId() === activity.id ? 'Guardando...' : (isFavorite(activity.id) ? 'Favorita' : 'Guardar') }}
+                  </button>
+                </div>
+              } @empty {
+                <div class="empty activity-empty">
+                  <b>{{availableMinutes() === null ? "Aun no hay microactividades disponibles" : "Ninguna actividad cabe en el tiempo indicado"}}</b>
+                  <p>El catalogo se mostrara aqui cuando se publiquen nuevas opciones.</p>
+                </div>
+              }
+            </div>
+          } @else {
+            @if (favoritesLoading()) {
+              <div class="loading-panel">Cargando tus favoritas...</div>
+            } @else if (!favoritesError()) {
+              <div class="activity-catalog-grid compact" aria-label="Mis microactividades favoritas">
+                @for (activity of favorites(); track activity.id) {
+                  <div class="compact-activity">
+                    <span>{{ activity.durationMinutes }} min</span>
+                    <b>{{ activity.title }}</b>
+                    <p>{{ activity.description }}</p>
+                  <button type="button" class="btn secondary guide-launch" (click)="openGuide(activity.id)"
+                          [disabled]="guideLoading() || guide() !== null">Modo guiado</button>
+                    <button type="button" class="favorite-toggle selected"
+                            [disabled]="favoriteBusyId() !== null"
+                            [attr.aria-label]="'Quitar de favoritas: ' + activity.title"
+                            [attr.aria-pressed]="true"
+                            (click)="toggleFavorite(activity)">
+                      <span aria-hidden="true">★</span>
+                      {{ favoriteBusyId() === activity.id ? 'Quitando...' : 'Quitar' }}
+                    </button>
+                  </div>
+                } @empty {
+                  <div class="empty activity-empty">
+                    <b>Todavia no tienes favoritas</b>
+                    <p>Selecciona la estrella de cualquier microactividad para guardarla aqui.</p>
+                  </div>
+                }
+              </div>
+            }
+          }
         </article>
       </section>
     }

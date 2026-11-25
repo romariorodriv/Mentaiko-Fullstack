@@ -25,6 +25,7 @@ export const routes: Routes = [
     {path: 'admin/dashboard', canActivate: [adminGuard], loadComponent: () => import('./components/admin/dashboard/admin-dashboard.component').then(m => m.AdminDashboardComponent)},
     {path: 'admin/emociones', canActivate: [adminGuard], loadComponent: () => import('./components/admin/emotions/admin-emotions.component').then(m => m.AdminEmotionsComponent)},
     {path: 'admin/actividades', canActivate: [adminGuard], loadComponent: () => import('./components/admin/activities/admin-activities.component').then(m => m.AdminActivitiesComponent)},
+    {path: 'admin/reglas', canActivate: [adminGuard], loadComponent: () => import('./components/admin/rules/admin-rules.component').then(m => m.AdminRulesComponent)},
     {path: 'admin/indicadores', canActivate: [adminGuard], loadComponent: () => import('./components/admin/indicators/admin-indicators.component').then(m => m.AdminIndicatorsComponent)},
     {path: '', pathMatch: 'full', redirectTo: 'dashboard'}
   ]},

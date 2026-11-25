@@ -44,6 +44,24 @@ describe('Domain API services', () => {
     req.flush([]);
   });
 
+  it('uses official per-user favorites API routes', () => {
+    const service = TestBed.inject(ActivitiesService);
+    service.favorites().subscribe();
+    const list = http.expectOne('/api/micro-activities/favorites');
+    expect(list.request.method).toBe('GET');
+    list.flush([]);
+
+    service.addFavorite(7).subscribe();
+    const add = http.expectOne('/api/micro-activities/7/favorite');
+    expect(add.request.method).toBe('POST');
+    add.flush({ id: 7, title: 'Respirar', savedAt: '2026-11-23T12:00:00' });
+
+    service.removeFavorite(7).subscribe();
+    const remove = http.expectOne('/api/micro-activities/7/favorite');
+    expect(remove.request.method).toBe('DELETE');
+    remove.flush(null);
+  });
+
   it('generates a recommendation for a check-in', () => {
     TestBed.inject(RecommendationsService).recommend(12).subscribe();
     const req = http.expectOne('/api/recommendations');

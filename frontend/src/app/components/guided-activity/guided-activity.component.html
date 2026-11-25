@@ -1,0 +1,47 @@
+<section class="panel guided-activity" aria-labelledby="guided-activity-title">
+  <header class="guide-header">
+    <div>
+      <span class="eyebrow">Modo guiado</span>
+      <h2 #heading id="guided-activity-title" tabindex="-1">{{ activity().title }}</h2>
+    </div>
+    <button type="button" class="btn secondary" (click)="closed.emit()" [disabled]="saving()">Cerrar guía</button>
+  </header>
+
+  <div class="guide-content">
+    <ol class="guide-steps" aria-label="Etapas de la actividad">
+      @for (step of activity().steps; track $index) {
+        <li [class.current-step]="$index === currentStep()" [attr.aria-current]="$index === currentStep() ? 'step' : null">
+          <strong>{{ step.title }}</strong>
+          <p>{{ step.instruction }}</p>
+        </li>
+      }
+    </ol>
+
+    <div class="guide-clock">
+      <span>Tiempo restante</span>
+      <div class="timer" role="timer">{{ time() }}</div>
+      <div class="timer-actions">
+        @if (phase() === 'ready' || phase() === 'paused') {
+          <button type="button" class="btn primary" (click)="start()">{{ phase() === 'ready' ? 'Iniciar' : 'Reanudar' }}</button>
+        } @else if (phase() === 'running') {
+          <button type="button" class="btn primary" (click)="pause()">Pausar</button>
+        } @else if (phase() === 'finished') {
+          <button type="button" class="btn primary" (click)="confirm()" [disabled]="saving()">
+            {{ saving() ? 'Guardando…' : 'Confirmar realización' }}
+          </button>
+        }
+        @if (phase() !== 'ready' && phase() !== 'saved') {
+          <button type="button" class="btn secondary" (click)="restart()" [disabled]="saving()">Reiniciar</button>
+        }
+      </div>
+      @if (phase() === 'finished') {
+        <p role="status">Se acabó el tiempo. Confirma cuando hayas realizado la actividad.</p>
+      } @else if (phase() === 'saved') {
+        <p role="status">Sesión guiada guardada.</p>
+      }
+      @if (error()) {
+        <p class="alert error" role="alert">{{ error() }}</p>
+      }
+    </div>
+  </div>
+</section>

@@ -1,8 +1,9 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 
-@Component({selector:'app-profile',standalone:true,imports:[ReactiveFormsModule],templateUrl: './profile.component.html',
+@Component({selector:'app-profile',standalone:true,imports:[ReactiveFormsModule,RouterLink],templateUrl: './profile.component.html',
   styleUrl: './profile.component.css'})
 export class ProfileComponent implements OnInit{
  private readonly fb=inject(FormBuilder);readonly loading=signal(true);readonly saving=signal(false);readonly message=signal('');readonly error=signal('');readonly form=this.fb.nonNullable.group({name:['',[Validators.required,Validators.maxLength(100)]],university:['',[Validators.required,Validators.maxLength(150)]],career:['',[Validators.required,Validators.maxLength(150)]]});

@@ -33,6 +33,32 @@ Plataforma web universitaria de bienestar emocional.
 | HU12 Reporte emocional semanal | Implementada |
 | HU13 Distribucion emocional | Implementada |
 | HU14 Indicadores administrativos anonimizados | Implementada |
+| HU33 Reglas de recomendacion configurables por el administrador | Implementada |
+
+### HU33: reglas emocion -> microactividad
+
+Un ADMIN gestiona en `/app/admin/reglas` (API `GET/POST /api/admin/rules` y `PUT /api/admin/rules/{id}`) que microactividades se recomiendan para cada emocion, con prioridad numerica (1 es la mas alta) y estado activo/inactivo. El motor de recomendaciones ya consume las reglas activas ordenadas por prioridad; si no queda ninguna activa para la emocion, recomienda una actividad activa del catalogo. Las recomendaciones ya emitidas guardan la actividad elegida, por lo que cambiar una regla no las altera. No requiere migracion: usa la tabla existente `emotion_activity_rules`.
+
+| HU22 Preferencias de tipos de actividad | Implementada |
+
+### HU22: equivalencia de categorias con Jira
+
+El estudiante elige sus tipos preferidos en `/app/preferencias-actividades` (tambien accesible desde `/app/perfil`) mediante `GET/PUT /api/me/activity-preferences`. Las recomendaciones priorizan, entre las reglas activas de la emocion, las actividades de esas categorias.
+
+| Jira | Codigo en catalogo | Etiqueta visible |
+| --- | --- | --- |
+| Respiracion | `RESPIRACION` | Respiración |
+| Reflexion escrita | `ESCRITURA` | Reflexión escrita |
+| Estiramiento | `MOVIMIENTO` | Movimiento y estiramiento |
+| Descanso ocular | `DESCANSO_OCULAR` (nuevo) | Descanso ocular |
+
+`RELAJACION`, `ATENCION_PLENA` y `GENERAL` se mantienen. Antes de desplegar, aplicar `database/012_activity_type_descanso_ocular.sql` con psql: es idempotente, actualiza los CHECK de `micro_activities` y `activity_preferences` e inserta la actividad de ejemplo "Regla 20-20-20 para tus ojos" si la categoria esta vacia.
+
+| HU25 Solicitar otra sugerencia de microactividad | Integrada en PR #25 |
+
+### HU25: recomendacion alternativa
+
+Se permite solicitar otra actividad pendiente mediante `POST /api/recommendations/{id}/alternative`. Antes del despliegue es necesario aplicar `database/012_recommendation_alternatives.sql` de manera controlada en PostgreSQL.
 
 ## Verificacion
 
@@ -67,10 +93,6 @@ No es necesario ejecutar `setx` ni declarar variables manuales en PowerShell par
 La cuenta administradora local es exclusivamente para demostracion academica. La credencial de demostracion se encuentra en `application-local.properties`, no debe reutilizarse en produccion y no debe copiarse a frontend, pantallas, logs ni documentacion publica adicional. Si el administrador ya existe, el inicializador no lo duplica.
 
 ## Variables backend
-
-Para solicitar alternativas con HU-25 en una base PostgreSQL existente, aplica `database/012_recommendation_alternatives.sql` antes de iniciar el backend. La migración conserva el historial y permite una recomendación vigente por check-in.
-
-`OPENAI_API_KEY` habilita la selección contextual de alternativas. Se puede configurar en `backend/.env` junto con `OPENAI_RECOMMENDATION_MODEL`, que usa `gpt-4o-mini` por defecto. Cuando falta la clave o falla el proveedor, se usa el catálogo local por prioridad.
 
 La aplicacion real requiere variables de entorno para PostgreSQL y JWT:
 
