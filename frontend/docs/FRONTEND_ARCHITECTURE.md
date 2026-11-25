@@ -22,7 +22,7 @@ Cada componente visual cuenta con:
 - `nombre.component.css`: estilos exclusivos del componente cuando los haya.
 - `nombre.component.spec.ts`: prueba inicial del componente.
 
-Los estilos compartidos siguen en `src/styles.css`. Los archivos CSS individuales que contienen solo un comentario son puntos de extensión y no duplican reglas globales.
+Los estilos compartidos siguen en `src/styles.css`. Cuando un componente no necesita reglas propias, su archivo CSS puede permanecer vacío. Los estilos generales se mantienen en `src/styles.css`.
 
 ## Organización
 
@@ -37,7 +37,7 @@ npm test -- --watch=false
 npm run build -- --configuration production
 ```
 
-Las pruebas de componentes agregadas por esta reorganización verifican inicialmente que puedan instanciarse; los flujos de negocio y sus interacciones requieren pruebas adicionales. La reorganización no modifica endpoints, modelos de datos ni lógica del servidor.
+Las pruebas de componentes cubren tanto la creación de vistas como distintos flujos de interacción. La cobertura de aceptación en navegador y la integración con el servidor desplegado se validan por separado.
 
 ## Organización de core
 
@@ -66,6 +66,6 @@ core/
     └── domain-services.spec.ts
 ```
 
-Los servicios HTTP exponen los mismos métodos y rutas REST que el cliente general anterior. Los componentes importan únicamente los servicios necesarios para su pantalla. `core/auth` conserva el tratamiento de sesión; los guards e interceptores continúan separados.
+Los servicios HTTP están separados por dominio. Los componentes importan únicamente los servicios necesarios para su pantalla. `core/auth` conserva el tratamiento de sesión; los guards e interceptores continúan separados.
 
 Los componentes Angular requieren archivos `.ts`, `.html`, `.css` y `.spec.ts`; los servicios, guards e interceptores no tienen plantilla ni estilos porque no representan vistas. Los contratos HTTP de los seis servicios especializados se verifican en `domain-services.spec.ts`.

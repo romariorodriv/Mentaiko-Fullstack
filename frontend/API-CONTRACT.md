@@ -1,6 +1,6 @@
-# Contrato API esperado por el frontend
+# Contrato de integración frontend–backend
 
-Base local: `http://localhost:8080/api`
+Prefijo de la API: `/api`. La URL efectiva depende del proxy o servidor que atiende la aplicación.
 
 | HU | Metodo | Endpoint | Uso |
 |---|---|---|---|
@@ -105,7 +105,7 @@ Invoke-RestMethod `
 Archivos principales:
 
 - Backend: `EmotionalEntry`, `EmotionalEntryRepository`, `CreateCheckinRequest`, `CheckinResponse`, `CheckinService`, `CheckinController`.
-- Frontend: `CheckinsComponent`, `ApiService.createCheckin`, `CheckinRequest`, `Checkin`.
+- Frontend: `CheckinsComponent`, `CheckinsService.createCheckin`, `CheckinRequest`, `Checkin`.
 
 ## HU06 - Consultar historial de check-ins
 

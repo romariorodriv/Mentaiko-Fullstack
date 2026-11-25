@@ -1,5 +1,7 @@
 # Diagnostico de integracion Backend-Frontend Mentaiko
 
+> **Documento histórico.** Describe una etapa anterior del proyecto. Para configurar, ejecutar o desplegar la versión actual, consulta el [README principal](../../README.md) y el código de `main`. No utilices rutas, estados de pruebas o instrucciones de despliegue de este informe sin contrastarlos con la versión vigente.
+
 Fecha de auditoria: 2026-09-06
 
 Alcance: backend Spring Boot en `back/mentaiko-backend` y frontend Angular localizado en `mentaiko-angular-frontend`. No se modifico codigo funcional.
