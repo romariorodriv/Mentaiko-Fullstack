@@ -44,7 +44,7 @@ El avance por historia de usuario se gestiona en Jira. Una funcionalidad integra
 - Node.js compatible con Angular 22 y npm.
 - PostgreSQL con una base de datos `mentaiko_db`.
 
-Crea la configuración local a partir de [backend/.env.example](backend/.env.example). Los secretos reales no se versionan. Spring Boot utiliza el perfil `local` por defecto y permite configurar la conexión a PostgreSQL y el secreto JWT mediante variables de entorno.
+Toma [backend/.env.example](backend/.env.example) como referencia para las variables de entorno; los secretos reales no se versionan. Por defecto se utiliza el perfil `local`. El archivo `backend/src/main/resources/application.properties` contiene los valores iniciales de conexión a PostgreSQL, así que verifica allí la URL y el usuario si tu instalación utiliza otros valores. `DB_PASSWORD` y `JWT_SECRET` se suministran por configuración externa.
 
 Backend (Windows PowerShell):
 
