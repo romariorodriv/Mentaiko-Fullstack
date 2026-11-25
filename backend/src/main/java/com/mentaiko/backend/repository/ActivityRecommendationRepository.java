@@ -50,4 +50,22 @@ public interface ActivityRecommendationRepository extends JpaRepository<Activity
             order by recommendation.createdAt desc, recommendation.id desc
             """)
     List<ActivityRecommendation> findByUserWithDetails(@Param("user") User user);
+
+    // HU-29: historial de actividades realizadas, filtrado y ordenado en la BD.
+    @Query("""
+            select recommendation
+            from ActivityRecommendation recommendation
+            join fetch recommendation.activity
+            join fetch recommendation.checkin
+            where recommendation.user = :user
+              and recommendation.completedAt is not null
+              and recommendation.completedAt >= coalesce(:from, recommendation.completedAt)
+              and recommendation.completedAt <= coalesce(:to, recommendation.completedAt)
+            order by recommendation.completedAt desc, recommendation.id desc
+            """)
+    List<ActivityRecommendation> findCompletedHistory(
+            @Param("user") User user,
+            @Param("from") java.time.LocalDateTime from,
+            @Param("to") java.time.LocalDateTime to
+    );
 }
