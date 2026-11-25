@@ -1,0 +1,106 @@
+<header class="page-head">
+  <div>
+    <span class="eyebrow">ADMINISTRACIÓN</span>
+    <h1>Reglas de recomendación</h1>
+    <p>Relaciona emociones con microactividades y define su prioridad sin tocar el código. Las recomendaciones ya emitidas no cambian.</p>
+  </div>
+</header>
+
+@if (error()) { <div class="alert error" role="alert">{{ error() }}</div> }
+@if (success()) { <div class="alert success" role="status">{{ success() }}</div> }
+
+<section class="admin-grid">
+  <form class="panel" [formGroup]="form" (ngSubmit)="submit()">
+    <span class="eyebrow">{{ editing() ? 'EDITAR REGLA' : 'NUEVA REGLA' }}</span>
+    <h2>{{ editing() ? 'Cambiar prioridad' : 'Vincular emoción y actividad' }}</h2>
+
+    <label>Emoción
+      <select formControlName="emotionId">
+        <option [ngValue]="null" disabled>Selecciona una emoción activa</option>
+        @if (editing(); as rule) {
+          <option [ngValue]="rule.emotionId">{{ rule.emotionName }}</option>
+        } @else {
+          @for (emotion of emotions(); track emotion.id) {
+            <option [ngValue]="emotion.id">{{ emotion.name }}</option>
+          }
+        }
+      </select>
+    </label>
+    @if (form.controls.emotionId.touched && form.controls.emotionId.invalid) {
+      <div class="field-error">Selecciona una emoción.</div>
+    }
+
+    <label>Microactividad
+      <select formControlName="activityId">
+        <option [ngValue]="null" disabled>Selecciona una microactividad activa</option>
+        @if (editing(); as rule) {
+          <option [ngValue]="rule.activityId">{{ rule.activityTitle }}</option>
+        } @else {
+          @for (activity of activities(); track activity.id) {
+            <option [ngValue]="activity.id">{{ activity.title }}</option>
+          }
+        }
+      </select>
+    </label>
+    @if (form.controls.activityId.touched && form.controls.activityId.invalid) {
+      <div class="field-error">Selecciona una microactividad.</div>
+    }
+
+    <label>Prioridad
+      <input type="number" formControlName="priority" min="1" step="1">
+      <small>1 es la más alta. Si hay varias reglas activas para la emoción, se usa la de menor número.</small>
+    </label>
+    @if (form.controls.priority.touched && form.controls.priority.invalid) {
+      <div class="field-error">La prioridad debe ser un número mayor o igual a 1.</div>
+    }
+
+    <button class="btn primary full" [disabled]="saving() || (editing() ? form.controls.priority.invalid : form.invalid)">
+      {{ saving() ? 'Guardando...' : (editing() ? 'Guardar prioridad' : 'Crear regla') }}
+    </button>
+    @if (editing()) {
+      <button type="button" class="btn secondary full rule-cancel" (click)="cancelEdit()">Cancelar edición</button>
+    }
+  </form>
+
+  <article class="panel span-2">
+    <div class="panel-head">
+      <div>
+        <span class="eyebrow">REGLAS CONFIGURADAS</span>
+        <h2>{{ rules().length }} reglas</h2>
+      </div>
+      <button class="btn secondary" type="button" (click)="load()" [disabled]="loading()">Actualizar</button>
+    </div>
+
+    @if (loading()) {
+      <div class="loading-panel">Cargando reglas...</div>
+    } @else if (rules().length === 0) {
+      <p class="empty">Aún no hay reglas. Mientras no exista una regla activa, se recomienda una actividad activa del catálogo.</p>
+    } @else {
+      <div class="rules-table-wrap">
+        <table class="rules-table">
+          <thead>
+            <tr><th>Emoción</th><th>Microactividad</th><th>Prioridad</th><th>Estado</th><th><span class="sr-only">Acciones</span></th></tr>
+          </thead>
+          <tbody>
+            @for (rule of rules(); track rule.id) {
+              <tr [class.editing]="editing()?.id === rule.id">
+                <td>{{ rule.emotionName }} @if (!rule.emotionActive) { <span class="status-pill">Emoción inactiva</span> }</td>
+                <td>{{ rule.activityTitle }} @if (!rule.activityActive) { <span class="status-pill">Actividad inactiva</span> }</td>
+                <td><b>{{ rule.priority }}</b></td>
+                <td>
+                  <span class="rule-state">
+                    <button type="button" class="switch" [class.on]="rule.active" (click)="toggle(rule)"
+                      [disabled]="busyId() === rule.id"
+                      [attr.aria-label]="(rule.active ? 'Desactivar' : 'Activar') + ' regla ' + rule.emotionName + ' - ' + rule.activityTitle"><i></i></button>
+                    {{ rule.active ? 'Activa' : 'Inactiva' }}
+                  </span>
+                </td>
+                <td><button type="button" class="btn secondary compact" (click)="startEdit(rule)">Editar</button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </article>
+</section>

@@ -20,5 +20,8 @@ export interface AdminIndicators { totalUsers: number; activeUsers: number; tota
 export interface AdminDashboard { totalUsers: number; activeUsers: number; totalAdmins: number; totalCheckins: number; totalEmotions: number; totalMicroActivities: number; totalRecommendations: number; completedRecommendations: number; }
 export interface AdminUser { id: number; name: string; email: string; birthDate: string; university: string; career: string; role: Role; active: boolean; createdAt: string; }
 export interface AdminCheckin { id: number; user: { id: number; name: string; email: string }; emotion: CheckinEmotion; intensity: number; context: string; createdAt: string; }
+export interface AdminRule { id: number; emotionId: number; emotionName: string; emotionActive: boolean; activityId: number; activityTitle: string; activityActive: boolean; priority: number; active: boolean; createdAt: string; }
+export interface CreateAdminRuleRequest { emotionId: number; activityId: number; priority: number; active?: boolean; }
+export interface UpdateAdminRuleRequest { priority?: number; active?: boolean; }
 export interface PageResponse<T> { content: T[]; totalElements: number; totalPages: number; number: number; size: number; }
 export interface ApiError { status?: number; message?: string; errors?: Record<string,string>; }
