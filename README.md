@@ -1,143 +1,96 @@
 # Mentaiko
 
-Plataforma web universitaria de bienestar emocional.
+Aplicación web para registrar el bienestar emocional y consultar microactividades. Está desarrollada con Angular, Spring Boot y PostgreSQL.
 
-## Tecnologias
+## Tecnologías
 
-- Frontend: Angular standalone
-- Backend: Spring Boot 4.1.1, Java 25
-- Base de datos: PostgreSQL en ejecucion real, H2 en pruebas
-- Seguridad: Spring Security, JWT y BCrypt
-
-## Estructura
-
-- `frontend`: aplicacion Angular
-- `backend`: API REST Spring Boot
-- `docs`: documentacion del proyecto
-
-## Estado funcional
-
-| HU | Estado |
+| Capa | Tecnología |
 | --- | --- |
-| HU01 Registro de usuario | Implementada |
-| HU02 Inicio de sesion | Implementada |
-| HU03 Consultar y actualizar perfil | Implementada |
-| HU04 Catalogo y administracion de emociones | Implementada |
-| HU05 Crear check-in emocional | Implementada |
-| HU06 Listar y filtrar check-ins | Implementada |
-| HU07 Editar check-in propio | Implementada |
-| HU08 Eliminar check-in propio | Implementada |
-| HU09 Catalogo y administracion de microactividades | Implementada |
-| HU10 Recomendaciones de bienestar | Implementada |
-| HU11 Completar recomendaciones | Implementada |
-| HU12 Reporte emocional semanal | Implementada |
-| HU13 Distribucion emocional | Implementada |
-| HU14 Indicadores administrativos anonimizados | Implementada |
-| HU33 Reglas de recomendacion configurables por el administrador | Implementada |
+| Frontend | Angular 22, TypeScript y CSS |
+| Backend | Java 25, Spring Boot 4.1.1 y Spring Security |
+| Datos | PostgreSQL; H2 para pruebas automatizadas |
+| Autenticación | JWT y BCrypt |
+| Pruebas | Vitest, JUnit y GitHub Actions |
 
-### HU33: reglas emocion -> microactividad
+## Estructura del repositorio
 
-Un ADMIN gestiona en `/app/admin/reglas` (API `GET/POST /api/admin/rules` y `PUT /api/admin/rules/{id}`) que microactividades se recomiendan para cada emocion, con prioridad numerica (1 es la mas alta) y estado activo/inactivo. El motor de recomendaciones ya consume las reglas activas ordenadas por prioridad; si no queda ninguna activa para la emocion, recomienda una actividad activa del catalogo. Las recomendaciones ya emitidas guardan la actividad elegida, por lo que cambiar una regla no las altera. No requiere migracion: usa la tabla existente `emotion_activity_rules`.
-
-| HU22 Preferencias de tipos de actividad | Implementada |
-
-### HU22: equivalencia de categorias con Jira
-
-El estudiante elige sus tipos preferidos en `/app/preferencias-actividades` (tambien accesible desde `/app/perfil`) mediante `GET/PUT /api/me/activity-preferences`. Las recomendaciones priorizan, entre las reglas activas de la emocion, las actividades de esas categorias.
-
-| Jira | Codigo en catalogo | Etiqueta visible |
-| --- | --- | --- |
-| Respiracion | `RESPIRACION` | Respiración |
-| Reflexion escrita | `ESCRITURA` | Reflexión escrita |
-| Estiramiento | `MOVIMIENTO` | Movimiento y estiramiento |
-| Descanso ocular | `DESCANSO_OCULAR` (nuevo) | Descanso ocular |
-
-`RELAJACION`, `ATENCION_PLENA` y `GENERAL` se mantienen. Antes de desplegar, aplicar `database/012_activity_type_descanso_ocular.sql` con psql: es idempotente, actualiza los CHECK de `micro_activities` y `activity_preferences` e inserta la actividad de ejemplo "Regla 20-20-20 para tus ojos" si la categoria esta vacia.
-
-| HU25 Solicitar otra sugerencia de microactividad | Integrada en PR #25 |
-
-### HU25: recomendacion alternativa
-
-Se permite solicitar otra actividad pendiente mediante `POST /api/recommendations/{id}/alternative`. Antes del despliegue es necesario aplicar `database/012_recommendation_alternatives.sql` de manera controlada en PostgreSQL.
-
-## Verificacion
-
-Backend:
-
-```powershell
-cd backend
-.\mvnw.cmd test
+```text
+mentaiko/
+├── backend/       API REST, reglas de negocio, persistencia y pruebas
+├── frontend/      Aplicación Angular y pruebas de componentes
+├── database/      Scripts SQL de evolución del esquema
+├── docs/          Procedimientos de despliegue y migraciones
+└── .github/       Integración continua
 ```
 
-Frontend:
+En Angular, las pantallas están en `frontend/src/app/components`, los clientes HTTP y la autenticación en `core`, el diseño compartido en `layouts` y los contratos de datos en `shared`. Consulta [la arquitectura del frontend](frontend/docs/FRONTEND_ARCHITECTURE.md) para más detalles.
 
-```powershell
-cd frontend
-npm.cmd run build
-```
+## Funcionalidades
 
-El proyecto Angular define pruebas con Vitest en `angular.json` y CI ejecuta pruebas y compilación del frontend. Para verificar localmente: `npm.cmd test -- --watch=false` y `npm.cmd run build`.
+- Registro, inicio de sesión, perfil y recuperación de contraseña.
+- Catálogo de emociones y check-ins con historial, filtros y edición.
+- Microactividades, preferencias, favoritos y recomendaciones según el tiempo disponible.
+- Actividades guiadas, registro de finalización, valoración y nuevas sugerencias.
+- Seguimiento de hábitos, objetivos, calendario emocional y reportes.
+- Administración de emociones, actividades, reglas de recomendación e indicadores.
 
-## Ejecucion local academica
+El avance por historia de usuario se gestiona en Jira. Una funcionalidad integrada en `main` puede requerir todavía migraciones o validación en el entorno desplegado.
 
-La aplicacion usa el perfil `local` por defecto mediante `spring.profiles.default=local`.
-Despues de hacer `git pull`, basta con levantar PostgreSQL y ejecutar el backend:
+## Ejecución local
+
+### Requisitos
+
+- Java 25.
+- Node.js compatible con Angular 22 y npm.
+- PostgreSQL con una base de datos `mentaiko_db`.
+
+Crea la configuración local a partir de [backend/.env.example](backend/.env.example). Los secretos reales no se versionan. Spring Boot utiliza el perfil `local` por defecto y permite configurar la conexión a PostgreSQL y el secreto JWT mediante variables de entorno.
+
+Backend (Windows PowerShell):
 
 ```powershell
 cd backend
 .\mvnw.cmd spring-boot:run
 ```
 
-No es necesario ejecutar `setx` ni declarar variables manuales en PowerShell para crear la cuenta administradora local. El perfil local carga `backend/src/main/resources/application-local.properties` y crea automaticamente una cuenta `ADMIN` si todavia no existe.
-
-La cuenta administradora local es exclusivamente para demostracion academica. La credencial de demostracion se encuentra en `application-local.properties`, no debe reutilizarse en produccion y no debe copiarse a frontend, pantallas, logs ni documentacion publica adicional. Si el administrador ya existe, el inicializador no lo duplica.
-
-## Variables backend
-
-La aplicacion real requiere variables de entorno para PostgreSQL y JWT:
-
-```text
-DB_URL
-DB_USERNAME
-DB_PASSWORD
-JWT_SECRET
-JWT_EXPIRATION
-```
-
-`JWT_SECRET` debe tener al menos 32 bytes. No guardar secretos reales en Git.
-
-## Produccion
-
-Produccion debe usar el perfil `prod`, que no incluye credenciales administrativas reales por defecto. Se inicia con:
+Frontend (desde otra terminal):
 
 ```powershell
-.\mvnw.cmd spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=prod"
+cd frontend
+npm ci
+npm start
 ```
 
-Tambien puede activarse con:
+Frontend: `http://localhost:4200`. La API local escucha en el puerto `8080`; consulta la configuración de proxy y `src/environments/environment.ts` antes de asumir una URL distinta.
 
-```text
-SPRING_PROFILES_ACTIVE=prod
+## Pruebas
+
+```powershell
+cd backend
+.\mvnw.cmd test
 ```
 
-En `prod`, el bootstrap administrativo se configura exclusivamente mediante variables de entorno:
-
-```text
-ADMIN_BOOTSTRAP_ENABLED
-ADMIN_NAME
-ADMIN_EMAIL
-ADMIN_PASSWORD
-ADMIN_BIRTH_DATE
-ADMIN_UNIVERSITY
-ADMIN_CAREER
+```powershell
+cd frontend
+npm ci
+npm test -- --watch=false
+npm run build -- --configuration production
 ```
 
-No colocar valores administrativos reales como valores predeterminados del perfil productivo.
+El pipeline está definido en [GitHub Actions](.github/workflows/wellbeing-ci.yml). Las pruebas automatizadas no reemplazan las pruebas de aceptación en un despliegue real.
 
-## Equipo
+## Base de datos y despliegue
 
-- Romario
-- Oscar
-- Rodrigo
-- Pedro
-- Martin
+Los scripts de `database/` **no deben ejecutarse todos automáticamente por orden alfabético**. Existen versiones de distintas ramas y algunas incluyen migraciones de datos. Antes de desplegar, revisa [la guía de migraciones](docs/database-migrations.md), realiza una copia de seguridad y confirma el esquema actual.
+
+La configuración productiva usa el perfil `prod`, validación del esquema y variables de entorno para las credenciales. No publicar claves, contraseñas ni tokens en este repositorio.
+
+## Documentación
+
+- [Frontend: puesta en marcha](frontend/README.md)
+- [Frontend: arquitectura](frontend/docs/FRONTEND_ARCHITECTURE.md)
+- [Contratos HTTP](frontend/API-CONTRACT.md)
+- [Migraciones de base de datos](docs/database-migrations.md)
+- [Despliegue de recuperación de contraseña](docs/password-reset-deployment.md)
+
+Los informes de implementación antiguos se conservan como antecedentes, pero no describen necesariamente el estado actual de `main`.

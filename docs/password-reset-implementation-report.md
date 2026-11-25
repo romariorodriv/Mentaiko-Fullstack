@@ -1,5 +1,7 @@
 # Recuperación de contraseña: entrega local aislada
 
+> **Documento histórico.** Describe una etapa anterior del proyecto. Para configurar, ejecutar o desplegar la versión actual, consulta el [README principal](../README.md) y el código de `main`. No utilices rutas, estados de pruebas o instrucciones de despliegue de este informe sin contrastarlos con la versión vigente.
+
 Estado: código organizado en `fix/password-reset-hardening`, con commits locales y autoría `romariorodriv <moises.rrr199@gmail.com>`. No se realizó push, PR, merge ni despliegue. `main` permanece en `fd4d2a8`.
 
 Los documentos `hu-16-22-initial-audit.md` y `hu-16-22-plan.md` permanecen sin seguimiento y fuera de esta rama. No se ha iniciado ninguna de esas siete historias. Estos commits de recuperación no cuentan para su objetivo de 100 commits.

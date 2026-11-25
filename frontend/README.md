@@ -1,47 +1,53 @@
-# Mentaiko Frontend
+# Frontend de Mentaiko
 
-Frontend Angular para el proyecto académico Mentaiko. Cubre las 14 historias de usuario del Product Backlog y consume exclusivamente la API Spring Boot.
-
-## Stack
-
-- Angular 22 con componentes standalone
-- Reactive Forms
-- Angular Router
-- HttpClient e interceptor JWT
-- Guards de autenticación y rol ADMIN
-- CSS responsive sin librerías visuales externas
+Aplicación Angular 22 basada en componentes standalone. Consume la API REST de Spring Boot; no utiliza datos simulados en el funcionamiento normal.
 
 ## Requisitos
 
-- Node.js 22.22.3+, 24.15+ o 26
-- npm 11+
-- Backend Spring Boot disponible en `http://localhost:8080`
+- Una versión de Node.js compatible con Angular 22.
+- npm.
+- Backend disponible para atender las solicitudes a `/api`.
 
-## Ejecución
+## Desarrollo
 
 ```bash
-npm install
+cd frontend
+npm ci
 npm start
 ```
 
 Abrir `http://localhost:4200`.
 
-## Configuración de API
+La URL de la API se define en `src/environments/environment.ts` y actualmente es relativa: `/api`. En producción, Nginx puede enrutar ese prefijo al backend. Para trabajar con servidores distintos, configura el proxy o el punto de entrada HTTP correspondiente; no cambies la URL a `localhost` sin verificar el entorno.
 
-Editar `src/environments/environment.ts`:
+## Comprobaciones
 
-```ts
-apiUrl: 'http://localhost:8080/api'
+```bash
+npm test -- --watch=false
+npm run build -- --configuration production
 ```
 
-## Contrato esperado
+Las pruebas utilizan Vitest. La compilación de producción se ejecuta también en CI.
 
-El archivo `API-CONTRACT.md` detalla los endpoints que el backend debe implementar. No se incluyen datos simulados: las pantallas muestran carga, vacío o error según la respuesta real.
+## Organización
+
+| Ruta | Contenido |
+| --- | --- |
+| `src/app/components/` | Pantallas y componentes funcionales |
+| `src/app/core/auth/` | Estado de sesión |
+| `src/app/core/guards/` | Acceso a rutas |
+| `src/app/core/interceptors/` | Cabeceras HTTP y autenticación |
+| `src/app/core/services/` | Clientes de la API por dominio |
+| `src/app/layouts/` | Estructura visual compartida |
+| `src/app/shared/models/` | Modelos y contratos TypeScript |
+| `src/environments/` | Configuración de entorno |
+
+Cada componente visual mantiene su plantilla, lógica, estilos y pruebas en archivos separados cuando corresponda. Más detalles en [Arquitectura del frontend](docs/FRONTEND_ARCHITECTURE.md).
 
 ## Seguridad
 
-El token JWT se guarda en `localStorage` para este MVP académico y se adjunta como `Authorization: Bearer TOKEN`. Para producción se recomienda revisar el modelo de sesión, CSP, expiración y estrategia frente a XSS.
+El cliente utiliza JWT y protección de rutas en Angular. La autorización efectiva depende del backend. El uso de `localStorage` para el token requiere medidas frente a XSS y revisión del modelo de sesión antes de ampliar el uso productivo.
 
-## Estructura de componentes
+## API
 
-Las pantallas se encuentran en `src/app/components` y cada componente cuenta con `.ts`, `.html`, `.css` y `.spec.ts`. El layout autenticado se mantiene en `src/app/layouts`; la sesión, API, guards y modelos siguen separados en `core` y `shared`. Ver `docs/FRONTEND_ARCHITECTURE.md` para las convenciones y estructura.
+Consulta [API-CONTRACT.md](API-CONTRACT.md) para los endpoints y formatos de intercambio. Mantén este documento sincronizado con los controladores y DTO del backend.
