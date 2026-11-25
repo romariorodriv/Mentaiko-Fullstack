@@ -2,12 +2,13 @@ import { Component, OnInit, signal } from '@angular/core';
 import { ActivitiesService } from '../../core/services/activities.service';
 import { RecommendationsService } from '../../core/services/recommendations.service';
 import { GuidedActivityComponent } from '../guided-activity/guided-activity.component';
+import { RecommendationAlternativeComponent } from '../recommendation-alternative/recommendation-alternative.component';
 import { FavoriteMicroActivity, MicroActivity, Recommendation, FocusSession, GuidedMicroActivity } from '../../shared/models/models';
 
 @Component({
   selector: 'app-activities',
   standalone: true,
-  imports: [GuidedActivityComponent],
+  imports: [GuidedActivityComponent, RecommendationAlternativeComponent],
   templateUrl: './activities.component.html',
   styleUrl: './activities.component.css'
 })
@@ -35,6 +36,7 @@ export class ActivitiesComponent implements OnInit {
   readonly guideLoading = signal(false);
   readonly guide = signal<{ activity: GuidedMicroActivity; recommendationId?: number } | null>(null);
   readonly feedbackBusyId = signal<number | null>(null);
+  readonly alternativeBusyId = signal<number | null>(null);
   readonly stars = [1, 2, 3, 4, 5];
   private readonly ratingDrafts = signal<Record<number, number>>({});
   private readonly commentDrafts = signal<Record<number, string>>({});
@@ -121,7 +123,7 @@ export class ActivitiesComponent implements OnInit {
   private loadRecommendations(): void {
     this.recommendationsApi.recommendations().subscribe({
       next: recommendations => {
-        this.recommendations.set(recommendations);
+        this.recommendations.set(recommendations.filter(item => !item.discardedAt));
         this.loading.set(false);
       },
       error: () => {
@@ -155,7 +157,7 @@ export class ActivitiesComponent implements OnInit {
   }
 
   complete(recommendation: Recommendation): void {
-    if (this.busyId() !== null) {
+    if (this.busyId() !== null || this.alternativeBusyId() !== null) {
       return;
     }
 
@@ -175,6 +177,14 @@ export class ActivitiesComponent implements OnInit {
         this.error.set('No se pudo completar la recomendacion.');
       }
     });
+  }
+
+  replaceRecommendation(previous: Recommendation, alternative: Recommendation): void {
+    this.alternativeBusyId.set(null);
+    this.error.set('');
+    this.success.set(`Nueva sugerencia: ${alternative.activity.title}`);
+    this.recommendations.update(items => items.map(item => item.id === previous.id ? alternative : item));
+    this.clearPostDraft(previous.id);
   }
 
   currentPost(recommendation: Recommendation): number {

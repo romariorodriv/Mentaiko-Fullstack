@@ -28,6 +28,7 @@ import com.mentaiko.backend.entity.ActivityRecommendation;
 import com.mentaiko.backend.entity.MicroActivity;
 import com.mentaiko.backend.entity.User;
 import com.mentaiko.backend.enums.Role;
+import com.mentaiko.backend.enums.RecommendationDiscardReason;
 import com.mentaiko.backend.repository.ActivityRecommendationRepository;
 import com.mentaiko.backend.repository.EmotionActivityRuleRepository;
 import com.mentaiko.backend.repository.EmotionRepository;
@@ -634,6 +635,73 @@ class RecommendationIntegrationTest {
         activity.setActive(active);
         activity.setActivityType(activityType);
         return microActivityRepository.save(activity);
+    }
+
+    @Test
+    void alternativeKeepsDiscardedHistoryAndReturnsTheNextEligibleRule() throws Exception {
+        User owner = saveUser("alternative@example.com");
+        Emotion emotion = saveEmotion("Calma", true);
+        EmotionalEntry checkin = saveCheckin(owner, emotion);
+        var previous = saveRecommendation(owner, checkin, saveActivity("Actividad actual", true));
+        var tooLong = saveActivity("Actividad larga", true);
+        tooLong.setDurationMinutes(12);
+        microActivityRepository.save(tooLong);
+        saveRule(emotion, tooLong, 1, true);
+        var next = saveActivity("Siguiente por prioridad", true);
+        saveRule(emotion, next, 2, true);
+        saveRule(emotion, saveActivity("A se ordena después", true), 3, true);
+
+        mockMvc.perform(post("/api/recommendations/{id}/alternative", previous.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"reason":"BIBLIOTECA","availableMinutes":5}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.activity.id").value(next.getId()))
+                .andExpect(jsonPath("$.checkinId").value(checkin.getId()))
+                .andExpect(jsonPath("$.fallbackUsed").value(true));
+
+        var discarded = recommendationRepository.findById(previous.getId()).orElseThrow();
+        assertThat(discarded.isCompleted()).isFalse();
+        assertThat(discarded.getCompletedAt()).isNull();
+        assertThat(discarded.getDiscardedAt()).isNotNull();
+        assertThat(discarded.getDiscardReason()).isEqualTo(RecommendationDiscardReason.BIBLIOTECA);
+
+        mockMvc.perform(post("/api/recommendations")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"checkinId\":" + checkin.getId() + "}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.activity.id").value(next.getId()));
+        mockMvc.perform(get("/api/recommendations/me").header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[1].discardReason").value("BIBLIOTECA"));
+        mockMvc.perform(post("/api/recommendations/{id}/complete", previous.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isConflict());
+        mockMvc.perform(post("/api/recommendations/{id}/alternative", previous.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isConflict());
+        assertThat(recommendationRepository.count()).isEqualTo(2);
+    }
+
+    @Test
+    void alternativeRequiresOwnershipAndKeepsTheOriginalWhenNoCandidateExists() throws Exception {
+        User owner = saveUser("alternative-owner@example.com");
+        User other = saveUser("alternative-other@example.com");
+        EmotionalEntry checkin = saveCheckin(owner, saveEmotion("Calma", true));
+        var current = saveRecommendation(owner, checkin, saveActivity("Única actividad activa", true));
+        saveActivity("Actividad inactiva", false);
+
+        mockMvc.perform(post("/api/recommendations/{id}/alternative", current.getId()))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/recommendations/{id}/alternative", current.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(other)))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post("/api/recommendations/{id}/alternative", current.getId())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(owner)))
+                .andExpect(status().isConflict());
+        assertThat(recommendationRepository.findById(current.getId()).orElseThrow().getDiscardedAt()).isNull();
+        assertThat(recommendationRepository.count()).isOne();
     }
 
     private ActivityRecommendation saveCompletedRecommendation(

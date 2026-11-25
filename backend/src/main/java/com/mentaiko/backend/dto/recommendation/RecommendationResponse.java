@@ -2,6 +2,8 @@ package com.mentaiko.backend.dto.recommendation;
 
 import java.time.LocalDateTime;
 
+import com.mentaiko.backend.enums.RecommendationDiscardReason;
+
 public record RecommendationResponse(
         Long id,
         Long checkinId,
@@ -13,6 +15,8 @@ public record RecommendationResponse(
         Integer helpfulnessRating,
         String feedbackComment,
         Integer preIntensity,
-        Integer postIntensity
+        Integer postIntensity,
+        LocalDateTime discardedAt,
+        RecommendationDiscardReason discardReason
 ) {
 }

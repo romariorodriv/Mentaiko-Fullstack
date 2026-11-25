@@ -4,12 +4,13 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { EmotionsService } from '../../core/services/emotions.service';
 import { CheckinsService } from '../../core/services/checkins.service';
 import { RecommendationsService } from '../../core/services/recommendations.service';
-import { ApiError, Checkin, Emotion } from '../../shared/models/models';
+import { RecommendationAlternativeComponent } from '../recommendation-alternative/recommendation-alternative.component';
+import { ApiError, Checkin, Emotion, Recommendation } from '../../shared/models/models';
 
 @Component({
   selector: 'app-checkins',
   standalone: true,
-  imports: [ReactiveFormsModule, DatePipe],
+  imports: [ReactiveFormsModule, DatePipe, RecommendationAlternativeComponent],
   templateUrl: './checkins.component.html',
   styleUrl: './checkins.component.css'
 })
@@ -33,6 +34,8 @@ export class CheckinsComponent implements OnInit {
   readonly totalPages = signal(0);
   readonly editingId = signal<number | null>(null);
   readonly recommendationBusyId = signal<number | null>(null);
+  readonly recommendationPreview = signal<Recommendation | null>(null);
+  readonly alternativeBusy = signal(false);
   readonly availableMinutes = signal<number | null>(null);
   readonly quickMinutes = [2, 5, 10] as const;
 
@@ -210,7 +213,7 @@ export class CheckinsComponent implements OnInit {
   }
 
   recommend(item: Checkin): void {
-    if (this.recommendationBusyId() !== null) {
+    if (this.recommendationBusyId() !== null || this.alternativeBusy()) {
       return;
     }
 
@@ -220,6 +223,7 @@ export class CheckinsComponent implements OnInit {
       next: recommendation => {
         this.recommendationBusyId.set(null);
         this.success.set(`Recomendacion: ${recommendation.activity.title}. ${recommendation.reason}`);
+        this.recommendationPreview.set(recommendation);
       },
       error: error => {
         this.recommendationBusyId.set(null);
@@ -228,8 +232,13 @@ export class CheckinsComponent implements OnInit {
     });
   }
 
+  showAlternative(recommendation: Recommendation): void {
+    this.recommendationPreview.set(recommendation);
+    this.success.set(`Nueva sugerencia: ${recommendation.activity.title}`);
+  }
+
   openDeleteConfirmation(item: Checkin): void {
-    if (this.deleting()) {
+    if (this.deleting() || this.alternativeBusy()) {
       return;
     }
     this.clearMessages();
@@ -258,6 +267,7 @@ export class CheckinsComponent implements OnInit {
       next: () => {
         this.deleting.set(false);
         this.deleteTarget.set(null);
+        if (this.recommendationPreview()?.checkinId === target.id) this.recommendationPreview.set(null);
         this.success.set('Check-in eliminado correctamente');
         if (this.items().length === 1 && this.page() > 0) {
           this.page.update(value => value - 1);

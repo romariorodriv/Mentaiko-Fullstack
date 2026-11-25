@@ -19,7 +19,7 @@ export interface FavoriteMicroActivity {
 }
 export interface CreateMicroActivityRequest { title: string; description: string; durationMinutes: number; }
 export interface UpdateMicroActivityRequest { title?: string; description?: string; durationMinutes?: number; active?: boolean; }
-export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; helpfulnessRating?: number | null; feedbackComment?: string | null; preIntensity?: number | null; postIntensity?: number | null; }
+export interface Recommendation { id: number; checkinId: number; activity: MicroActivity; reason: string; fallbackUsed: boolean; createdAt: string; completedAt?: string; helpfulnessRating?: number | null; feedbackComment?: string | null; preIntensity?: number | null; postIntensity?: number | null; discardedAt?: string | null; discardReason?: RecommendationDiscardReason | null; }
 export interface RecommendationFeedbackRequest { helpfulnessRating: number; feedbackComment?: string; }
 export interface WeeklyPoint { label: string; count: number; averageIntensity: number; }
 export interface DistributionItem { label: string; count: number; percentage: number; }
@@ -54,3 +54,6 @@ export interface FocusSession {
   durationSeconds: number;
   completedAt: string;
 }
+
+export type RecommendationDiscardReason = 'TRANSPORTE' | 'BIBLIOTECA' | 'POCO_ESPACIO' | 'POCO_TIEMPO' | 'OTRO';
+export interface AlternativeRecommendationRequest { reason?: RecommendationDiscardReason; availableMinutes?: number; }

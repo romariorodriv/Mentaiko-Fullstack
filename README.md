@@ -54,6 +54,12 @@ El estudiante elige sus tipos preferidos en `/app/preferencias-actividades` (tam
 
 `RELAJACION`, `ATENCION_PLENA` y `GENERAL` se mantienen. Antes de desplegar, aplicar `database/012_activity_type_descanso_ocular.sql` con psql: es idempotente, actualiza los CHECK de `micro_activities` y `activity_preferences` e inserta la actividad de ejemplo "Regla 20-20-20 para tus ojos" si la categoria esta vacia.
 
+| HU25 Solicitar otra sugerencia de microactividad | Integrada en PR #25 |
+
+### HU25: recomendacion alternativa
+
+Se permite solicitar otra actividad pendiente mediante `POST /api/recommendations/{id}/alternative`. Antes del despliegue es necesario aplicar `database/012_recommendation_alternatives.sql` de manera controlada en PostgreSQL.
+
 ## Verificacion
 
 Backend:

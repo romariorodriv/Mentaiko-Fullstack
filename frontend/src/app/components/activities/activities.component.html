@@ -5,14 +5,14 @@
         <h1>Microactividades</h1>
         <p>Acciones breves e informativas que puedes explorar a tu propio ritmo.</p>
       </div>
-      <button class="btn secondary" (click)="load()" [disabled]="loading()">Actualizar</button>
+      <button class="btn secondary" (click)="load()" [disabled]="loading() || alternativeBusyId() !== null">Actualizar</button>
     </header>
 
     @if (error()) {
       <div class="alert error">{{ error() }}</div>
     }
     @if (success()) {
-      <div class="alert success">{{ success() }}</div>
+      <div class="alert success" role="status">{{ success() }}</div>
     }
 
     @if (guide(); as currentGuide) {
@@ -45,9 +45,13 @@
                 @if (recommendation.completedAt) {
                   <span class="status-pill done">Completada</span>
                 } @else {
-                  <button class="btn secondary" (click)="complete(recommendation)" [disabled]="busyId() === recommendation.id || guide()?.recommendationId === recommendation.id">
+                  <button class="btn secondary" (click)="complete(recommendation)" [disabled]="busyId() !== null || alternativeBusyId() !== null || guide()?.recommendationId === recommendation.id">
                     {{ busyId() === recommendation.id ? 'Guardando...' : 'Marcar completa' }}
                   </button>
+                  <app-recommendation-alternative [recommendationId]="recommendation.id"
+                    [disabled]="busyId() !== null || guide() !== null || (alternativeBusyId() !== null && alternativeBusyId() !== recommendation.id)"
+                    (busyChange)="alternativeBusyId.set($event ? recommendation.id : null)"
+                    (replacement)="replaceRecommendation(recommendation, $event)" />
                 }
                 @if (!recommendation.postIntensity) {
                   <section class="activity-post" aria-label="Como te sientes despues de la actividad (opcional)">

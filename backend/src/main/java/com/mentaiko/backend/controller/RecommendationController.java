@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.mentaiko.backend.dto.recommendation.CompleteRecommendationRequest;
 import com.mentaiko.backend.dto.recommendation.CreateRecommendationRequest;
 import com.mentaiko.backend.dto.recommendation.RecommendationFeedbackRequest;
+import com.mentaiko.backend.dto.recommendation.AlternativeRecommendationRequest;
 import com.mentaiko.backend.dto.recommendation.RecommendationResponse;
 import com.mentaiko.backend.service.RecommendationService;
 
@@ -59,5 +60,15 @@ public class RecommendationController {
             @Valid @RequestBody RecommendationFeedbackRequest request
     ) {
         return recommendationService.submitFeedback(authentication.getName(), id, request);
+    }
+    @PostMapping("/api/recommendations/{id}/alternative")
+    @ResponseStatus(HttpStatus.CREATED)
+    public RecommendationResponse alternative(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody(required = false) AlternativeRecommendationRequest request
+    ) {
+        return recommendationService.alternative(authentication.getName(), id,
+                request == null ? new AlternativeRecommendationRequest(null, null) : request);
     }
 }
