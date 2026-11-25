@@ -30,7 +30,7 @@ En Angular, las pantallas están en `frontend/src/app/components`, los clientes 
 - Registro, inicio de sesión, perfil y recuperación de contraseña.
 - Catálogo de emociones y check-ins con historial, filtros y edición.
 - Microactividades, preferencias, favoritos y recomendaciones según el tiempo disponible.
-- Actividades guiadas, registro de finalización, valoración y nuevas sugerencias.
+- Actividades guiadas, registro de finalización, valoración y nuevas sugerencias; historial de actividades realizadas con su valoración y opción de repetirlas en modo guiado.
 - Seguimiento de hábitos, objetivos, calendario emocional y reportes.
 - Administración de emociones, actividades, reglas de recomendación e indicadores.
 
