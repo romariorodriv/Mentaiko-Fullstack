@@ -26,6 +26,7 @@ No ejecutar todas las migraciones de esta carpeta de forma indiscriminada. Algun
 | `012_activity_type_descanso_ocular.sql` | Categoría de descanso ocular |
 | `012_recommendation_alternatives.sql` | Recomendaciones descartadas y alternativas |
 | `013_focus_sessions.sql` | Sesiones de actividades guiadas |
+| `014_admin_audit_events.sql` | Auditoría de cambios administrativos HU-34 (aplicar antes del nuevo backend) |
 
 ## Numeraciones duplicadas
 
@@ -36,3 +37,10 @@ Para favoritos, sigue [el procedimiento específico](SCRUM-16-favorites-migratio
 ## Despliegue
 
 El merge de un PR en GitHub **no actualiza** la base de datos de AWS. Valida las migraciones pendientes contra el esquema de producción antes de desplegar el JAR. Conserva un registro de fecha, responsable, script y resultado de cada ejecución.
+
+## HU-32 y HU-34: precauciones especiales
+
+- HU-32 elimina registros relacionados dentro de una única transacción. Antes de desplegar, contrastar en PostgreSQL las FK efectivas que referencian `users` y `checkins`; no se debe asumir cascada sin verificar `pg_constraint`.
+- HU-34 requiere aplicar `014_admin_audit_events.sql` manualmente antes de iniciar el backend con `ddl-auto=validate`. No altera los eventos históricos anteriores a la instalación.
+- El identificador numérico de administrador permanece para la trazabilidad incluso si su usuario se elimina; no se almacenan contraseñas ni correos en la tabla de auditoría.
+- Preparar backup y ventana de mantenimiento; este PR no debe ejecutar migraciones ni despliegues automáticamente.
