@@ -94,3 +94,11 @@ La configuración productiva usa el perfil `prod`, validación del esquema y var
 - [Despliegue de recuperación de contraseña](docs/password-reset-deployment.md)
 
 Los informes de implementación antiguos se conservan como antecedentes, pero no describen necesariamente el estado actual de `main`.
+
+## Configuración segura del administrador local
+
+El perfil `local` no crea administradores automáticamente. Para crear el primer administrador en una base de pruebas, establece `ADMIN_BOOTSTRAP_ENABLED=true` y proporciona `ADMIN_NAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_BIRTH_DATE`, `ADMIN_UNIVERSITY` y `ADMIN_CAREER` por variables de entorno. No guardes credenciales en archivos versionados. Si se reutilizó una clave incluida en una versión anterior del repositorio, cámbiala en todos los entornos afectados; eliminarla del archivo actual no la borra del historial.
+
+## Exportación de información personal (HU-31)
+
+Desde Perfil, el usuario puede descargar un archivo JSON con sus check-ins y recomendaciones personales. Puede filtrar por fechas y decidir si incluye notas privadas; el valor predeterminado es excluirlas. No se requiere una nueva migración. El endpoint es `GET /api/users/me/export`. Consulta el contrato HTTP para los detalles.

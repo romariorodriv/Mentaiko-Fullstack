@@ -576,3 +576,17 @@ Archivos principales:
 
 - Backend: `AdminIndicatorsController`, `AdminIndicatorsService`, `AdminIndicatorsResponse`, `AdminIndicatorsIntegrationTest`.
 - Frontend: `AdminIndicatorsComponent`, `ApiService.indicators`, `AdminIndicators`.
+
+## HU31 - Exportar información personal
+
+`GET /api/users/me/export?from=YYYY-MM-DD&to=YYYY-MM-DD&includeNotes=false`
+
+Requiere JWT. Devuelve un archivo descargable `application/json` con arreglos `checkins` y `activities`, únicamente del usuario autenticado. Los filtros `from` y `to` son opcionales e inclusivos por fecha de creación. Si `from > to`, responde HTTP 400. No devuelve notas de check-ins ni comentarios privados de actividades salvo que `includeNotes=true` sea enviado expresamente. La interfaz ofrece esa casilla desmarcada por defecto.
+
+## HU32 - Eliminar cuenta propia
+
+`DELETE /api/users/me` exige JWT y un cuerpo `{"password":"..."}`. Responde HTTP 204 en caso de éxito; elimina los registros relacionados dentro de una transacción y deja de aceptar los JWT de esa cuenta.
+
+## HU34 - Historial administrativo
+
+`GET /api/admin/audit?limit=25&offset=0&resourceType=RULE` requiere rol ADMIN. El tipo de recurso puede omitirse o ser `EMOTION`, `MICRO_ACTIVITY` o `RULE`. Los cambios registrados incluyen actor, acción, recurso y resúmenes anteriores/posteriores.

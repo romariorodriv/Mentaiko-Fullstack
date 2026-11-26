@@ -23,6 +23,25 @@ describe('ProfileComponent', () => {
     expect(link!.textContent).toContain('Preferencias de actividades');
   });
 
+  it('exports private data without notes by default', () => {
+    TestBed.configureTestingModule({ imports: [ProfileComponent], providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
+    const fixture = TestBed.createComponent(ProfileComponent);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(req => req.method === 'GET' && req.url.endsWith('/users/me'))
+      .flush({ name: 'QA', email: 'qa@example.invalid', university: 'UPC', career: 'Software', role: 'USER' });
+    fixture.detectChanges();
+    const button = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')]
+      .find(element => element.textContent?.includes('Descargar mis datos'))!;
+    button.click();
+    const request = http.expectOne(req => req.url.endsWith('/users/me/export'));
+    expect(request.request.method).toBe('GET');
+    expect(request.request.params.get('includeNotes')).toBe('false');
+    expect(request.request.responseType).toBe('blob');
+    request.flush(new Blob(['No disponible'], {type: 'text/plain'}), {status: 500, statusText: 'Server Error'});
+    expect(fixture.componentInstance.error()).toContain('No se pudo exportar');
+  });
+
   it('requires password confirmation and calls the self-deletion endpoint', () => {
     TestBed.configureTestingModule({ imports: [ProfileComponent], providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([{path: 'login', component: ProfileComponent}])] });
     const fixture = TestBed.createComponent(ProfileComponent);

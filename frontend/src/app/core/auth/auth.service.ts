@@ -53,6 +53,15 @@ export class AuthService {
   }
   loadProfile(): Observable<UserProfile> { return this.http.get<UserProfile>(`${environment.apiUrl}/users/me`).pipe(tap(p => this.profileState.set(p))); }
   updateProfile(body: Pick<UserProfile,'name'|'university'|'career'>): Observable<UserProfile> { return this.http.put<UserProfile>(`${environment.apiUrl}/users/me`, body).pipe(tap(p => this.profileState.set(p))); }
+  exportPersonalData(from?: string, to?: string, includeNotes = false): Observable<Blob> {
+    const params: Record<string, string> = { includeNotes: String(includeNotes) };
+    if (from) params['from'] = from;
+    if (to) params['to'] = to;
+    return this.http.get(`${environment.apiUrl}/users/me/export`, {
+      params,
+      responseType: 'blob',
+    });
+  }
   deleteAccount(password: string): Observable<void> {
     return this.http.request<void>('DELETE', `${environment.apiUrl}/users/me`, {body: {password}})
       .pipe(tap(() => this.logout()));

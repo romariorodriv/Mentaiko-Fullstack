@@ -34,10 +34,6 @@ public interface EmotionalEntryRepository
         @Query("select entry from EmotionalEntry entry where entry.id = :id and entry.user = :user")
         Optional<EmotionalEntry> findLockedByIdAndUser(@Param("id") Long id, @Param("user") User user);
 
-        // Pega aquí los dos nuevos métodos:
-        // findHistory(...)
-        // findHistoryByContext(...)
-
         @Query(value = """
                         select entry
                         from EmotionalEntry entry
