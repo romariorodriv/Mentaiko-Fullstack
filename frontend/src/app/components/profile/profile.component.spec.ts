@@ -24,7 +24,7 @@ describe('ProfileComponent', () => {
   });
 
   it('requires password confirmation and calls the self-deletion endpoint', () => {
-    TestBed.configureTestingModule({ imports: [ProfileComponent], providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
+    TestBed.configureTestingModule({ imports: [ProfileComponent], providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([{path: 'login', component: ProfileComponent}])] });
     const fixture = TestBed.createComponent(ProfileComponent);
     fixture.detectChanges();
     const http = TestBed.inject(HttpTestingController);
