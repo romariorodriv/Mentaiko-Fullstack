@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -33,6 +34,7 @@ public class AdminRuleService {
     private static final Logger log = LoggerFactory.getLogger(AdminRuleService.class);
     private static final String DUPLICATE_MESSAGE = "Ya existe una regla para esa emocion y microactividad";
 
+    private final AdminAuditService audit;
     private final EmotionActivityRuleRepository ruleRepository;
     private final EmotionRepository emotionRepository;
     private final MicroActivityRepository microActivityRepository;
@@ -42,6 +44,13 @@ public class AdminRuleService {
             EmotionRepository emotionRepository,
             MicroActivityRepository microActivityRepository
     ) {
+        this(ruleRepository, emotionRepository, microActivityRepository, null);
+    }
+
+    @Autowired
+    public AdminRuleService(EmotionActivityRuleRepository ruleRepository, EmotionRepository emotionRepository,
+            MicroActivityRepository microActivityRepository, AdminAuditService audit) {
+        this.audit = audit;
         this.ruleRepository = ruleRepository;
         this.emotionRepository = emotionRepository;
         this.microActivityRepository = microActivityRepository;
@@ -97,6 +106,8 @@ public class AdminRuleService {
                     emotion.getId(), activity.getId());
             throw new DuplicateRuleException(DUPLICATE_MESSAGE);
         }
+        if (audit != null) audit.record("CREATE", "RULE", savedRule.getId(), null,
+                "emotion=" + emotion.getId() + ",activity=" + activity.getId() + ",priority=" + savedRule.getPriority() + ",active=" + savedRule.isActive());
         log.info("Rule created with id={} emotion id={} activity id={} priority={} active={}",
                 savedRule.getId(), emotion.getId(), activity.getId(), savedRule.getPriority(), savedRule.isActive());
         return toResponse(savedRule);
@@ -115,6 +126,7 @@ public class AdminRuleService {
                     return new ResponseStatusException(HttpStatus.NOT_FOUND, "Regla no encontrada");
                 });
 
+        String before = "priority=" + rule.getPriority() + ",active=" + rule.isActive();
         if (request.priority() != null) {
             rule.setPriority(request.priority());
         }
@@ -122,6 +134,8 @@ public class AdminRuleService {
             rule.setActive(request.active());
         }
 
+        if (audit != null) audit.record("UPDATE", "RULE", rule.getId(), before,
+                "priority=" + rule.getPriority() + ",active=" + rule.isActive());
         log.info("Rule id={} updated priority={} active={}", rule.getId(), rule.getPriority(), rule.isActive());
         return toResponse(rule);
     }

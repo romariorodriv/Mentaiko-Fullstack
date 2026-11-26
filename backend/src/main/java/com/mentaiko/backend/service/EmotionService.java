@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -24,8 +25,15 @@ public class EmotionService {
     private static final Logger log = LoggerFactory.getLogger(EmotionService.class);
 
     private final EmotionRepository emotionRepository;
+    private final AdminAuditService audit;
 
     public EmotionService(EmotionRepository emotionRepository) {
+        this(emotionRepository, null);
+    }
+
+    @Autowired
+    public EmotionService(EmotionRepository emotionRepository, AdminAuditService audit) {
+        this.audit = audit;
         this.emotionRepository = emotionRepository;
     }
 
@@ -55,6 +63,8 @@ public class EmotionService {
         emotion.setActive(true);
 
         Emotion savedEmotion = emotionRepository.save(emotion);
+        if (audit != null) audit.record("CREATE", "EMOTION", savedEmotion.getId(), null,
+                "name=" + savedEmotion.getName() + ",active=" + savedEmotion.isActive());
         log.info("Emotion created with id={} active={}", savedEmotion.getId(), savedEmotion.isActive());
         return toResponse(savedEmotion);
     }
@@ -72,6 +82,7 @@ public class EmotionService {
                     return new ResponseStatusException(HttpStatus.NOT_FOUND, "Emocion no encontrada");
                 });
 
+        String before = "name=" + emotion.getName() + ",active=" + emotion.isActive();
         if (request.name() != null) {
             String name = normalizeSpaces(request.name());
             validateName(name);
@@ -90,6 +101,8 @@ public class EmotionService {
             emotion.setActive(request.active());
         }
 
+        if (audit != null) audit.record("UPDATE", "EMOTION", emotion.getId(), before,
+                "name=" + emotion.getName() + ",active=" + emotion.isActive());
         log.info("Emotion id={} updated active={}", emotion.getId(), emotion.isActive());
         return toResponse(emotion);
     }

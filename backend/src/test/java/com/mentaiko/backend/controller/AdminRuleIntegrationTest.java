@@ -461,4 +461,38 @@ class AdminRuleIntegrationTest {
     private String bearer(User user) {
         return "Bearer " + jwtService.generateToken(user);
     }
+
+    @Test
+    void auditLogRecordsCommittedRuleCreationAndRejectsUserAccess() throws Exception {
+        User adminUser = saveUser("hu34-admin@example.com", Role.ADMIN);
+        User regularUser = saveUser("hu34-user@example.com", Role.USER);
+        Emotion emotion = saveEmotion("Calma auditoria", true);
+        MicroActivity activity = saveActivity("Pausa auditada", true);
+        int before = jdbc.queryForObject("SELECT COUNT(*) FROM admin_audit_events", Integer.class);
+
+        mockMvc.perform(post(URL)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody(emotion.getId(), activity.getId(), 2)))
+                .andExpect(status().isCreated());
+
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM admin_audit_events", Integer.class))
+                .isEqualTo(before + 1);
+        mockMvc.perform(get("/api/admin/audit")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminUser)))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/admin/audit")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(regularUser)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/admin/audit")).andExpect(status().isUnauthorized());
+
+        // Duplicate pair must not create an audit event.
+        mockMvc.perform(post(URL)
+                        .header(HttpHeaders.AUTHORIZATION, bearer(adminUser))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(createBody(emotion.getId(), activity.getId(), 2)))
+                .andExpect(status().isConflict());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM admin_audit_events", Integer.class))
+                .isEqualTo(before + 1);
+    }
 }

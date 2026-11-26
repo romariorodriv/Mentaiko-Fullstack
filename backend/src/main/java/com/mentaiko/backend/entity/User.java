@@ -3,6 +3,7 @@ package com.mentaiko.backend.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Instant;
+import java.security.SecureRandom;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
@@ -19,6 +20,7 @@ import com.mentaiko.backend.enums.Role;
 @Entity
 @Table(name = "users")
 public class User {
+    private static final SecureRandom TOKEN_VERSION_RANDOM = new SecureRandom();
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -71,6 +73,11 @@ public class User {
         LocalDateTime now = LocalDateTime.now();
         createdAt = now;
         updatedAt = now;
+        // Never recycle auth_version=0 for a new account with a previously deleted email.
+        // Existing accounts retain their version, so their issued JWTs are unaffected.
+        if (authVersion == 0) {
+            authVersion = TOKEN_VERSION_RANDOM.nextLong(1, Long.MAX_VALUE);
+        }
 
         if (role == null) {
             role = Role.USER;
