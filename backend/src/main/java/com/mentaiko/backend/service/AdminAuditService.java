@@ -35,7 +35,7 @@ public class AdminAuditService {
         Long actorId = users.findByEmailIgnoreCase(authentication.getName())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No autorizado"))
                 .getId();
-        jdbc.update("INSERT INTO admin_audit_events(actor_user_id, action, resource_type, resource_id, before_summary, after_summary) VALUES (?, ?, ?, ?, ?, ?)",
+        jdbc.update("INSERT INTO admin_audit_events(actor_user_id, action, resource_type, resource_id, before_summary, after_summary, occurred_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)",
                 actorId, action, resourceType, resourceId, before, after);
     }
 
