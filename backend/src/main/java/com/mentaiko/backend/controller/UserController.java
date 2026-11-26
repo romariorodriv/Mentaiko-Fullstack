@@ -4,6 +4,7 @@ package com.mentaiko.backend.controller;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,6 +19,8 @@ import com.mentaiko.backend.dto.auth.LoginResponse;
 import com.mentaiko.backend.dto.auth.RegisterRequest;
 import com.mentaiko.backend.dto.auth.UserResponse;
 import com.mentaiko.backend.dto.user.UpdateUserProfileRequest;
+import com.mentaiko.backend.dto.user.DeleteAccountRequest;
+import com.mentaiko.backend.service.AccountDeletionService;
 
 import com.mentaiko.backend.service.PasswordResetService;
 import com.mentaiko.backend.service.UserService;
@@ -28,14 +31,17 @@ import jakarta.validation.Valid;
 public class UserController {
 
     private final UserService userService;
+    private final AccountDeletionService accountDeletionService;
     private final PasswordResetService passwordResetService;
 
     public UserController(
             UserService userService,
-            PasswordResetService passwordResetService) {
+            PasswordResetService passwordResetService,
+            AccountDeletionService accountDeletionService) {
 
         this.userService = userService;
         this.passwordResetService = passwordResetService;
+        this.accountDeletionService = accountDeletionService;
     }
 
     // REGISTRO DE USUARIOS
@@ -92,5 +98,10 @@ public class UserController {
                 authentication.getName(),
                 request
         );
+    }
+    @DeleteMapping("/api/users/me")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteMe(Authentication authentication, @Valid @RequestBody DeleteAccountRequest request) {
+        accountDeletionService.deleteOwnAccount(authentication.getName(), request.password());
     }
 }
