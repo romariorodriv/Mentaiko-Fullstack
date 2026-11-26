@@ -1,0 +1,26 @@
+<header class="page-head"><div><span class="eyebrow">ADMINISTRACIÓN</span>
+<h1>Auditoría de cambios</h1><p>Historial de cambios confirmados sobre emociones, actividades y reglas.</p></div></header>
+<section class="panel">
+  <label for="audit-resource">Filtrar por recurso</label>
+  <select id="audit-resource" #resource (change)="changeFilter(resource.value)">
+    <option value="">Todos</option><option value="EMOTION">Emociones</option>
+    <option value="MICRO_ACTIVITY">Microactividades</option><option value="RULE">Reglas</option>
+  </select>
+  <button type="button" class="btn secondary" (click)="load()" [disabled]="loading()">Actualizar</button>
+  @if(error()) { <p class="alert error" role="alert">{{error()}}</p> }
+  @if(loading()) { <p aria-live="polite">Cargando auditoría...</p> }
+  @else if (!events().length) { <p>No hay eventos para este filtro.</p> }
+  @else {
+    <div class="audit-scroll"><table><thead><tr><th>Fecha</th><th>Admin ID</th><th>Acción</th><th>Recurso</th><th>ID</th><th>Antes</th><th>Después</th></tr></thead>
+    <tbody>@for(item of events(); track item.id) { <tr>
+      <td>{{item.occurred_at | date:'short'}}</td><td>{{item.actor_user_id}}</td>
+      <td>{{item.action}}</td><td>{{item.resource_type}}</td><td>{{item.resource_id}}</td>
+      <td>{{item.before_summary || '—'}}</td><td>{{item.after_summary}}</td>
+    </tr> }</tbody></table></div>
+  }
+  <div class="audit-pagination">
+    <button class="btn secondary" type="button" (click)="previous()" [disabled]="loading() || page()===0">Anterior</button>
+    <span>Página {{page()+1}}</span>
+    <button class="btn secondary" type="button" (click)="next()" [disabled]="loading() || events().length < pageSize">Siguiente</button>
+  </div>
+</section>
