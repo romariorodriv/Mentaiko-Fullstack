@@ -22,4 +22,29 @@ describe('ProfileComponent', () => {
     expect(link).not.toBeNull();
     expect(link!.textContent).toContain('Preferencias de actividades');
   });
+
+  it('requires password confirmation and calls the self-deletion endpoint', () => {
+    TestBed.configureTestingModule({ imports: [ProfileComponent], providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])] });
+    const fixture = TestBed.createComponent(ProfileComponent);
+    fixture.detectChanges();
+    const http = TestBed.inject(HttpTestingController);
+    http.expectOne(request => request.url.endsWith('/users/me') && request.method === 'GET')
+      .flush({ name: 'QA', email: 'qa@example.invalid', university: 'UPC', career: 'Software', role: 'USER' });
+    fixture.detectChanges();
+
+    const first = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')]
+      .find(b => b.textContent?.includes('Quiero eliminar mi cuenta'))!;
+    first.click();
+    fixture.detectChanges();
+    const pwd = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('#delete-password')!;
+    pwd.value = 'Password-qa-2026!';
+    pwd.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    const confirm = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')]
+      .find(b => b.textContent?.includes('Eliminar definitivamente'))!;
+    confirm.click();
+    const request = http.expectOne(req => req.method === 'DELETE' && req.url.endsWith('/users/me'));
+    expect(request.request.body).toEqual({password: 'Password-qa-2026!'});
+    request.flush(null, {status: 204, statusText: 'No Content'});
+  });
 });
