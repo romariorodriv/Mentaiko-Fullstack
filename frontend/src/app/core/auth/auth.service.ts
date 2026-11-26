@@ -53,6 +53,10 @@ export class AuthService {
   }
   loadProfile(): Observable<UserProfile> { return this.http.get<UserProfile>(`${environment.apiUrl}/users/me`).pipe(tap(p => this.profileState.set(p))); }
   updateProfile(body: Pick<UserProfile,'name'|'university'|'career'>): Observable<UserProfile> { return this.http.put<UserProfile>(`${environment.apiUrl}/users/me`, body).pipe(tap(p => this.profileState.set(p))); }
+  deleteAccount(password: string): Observable<void> {
+    return this.http.request<void>('DELETE', `${environment.apiUrl}/users/me`, {body: {password}})
+      .pipe(tap(() => this.logout()));
+  }
   logout(): void { localStorage.removeItem(this.key); this.profileState.set(null); void this.router.navigate(['/login']); }
   clearSession(): void { localStorage.removeItem(this.key); this.profileState.set(null); }
 }
