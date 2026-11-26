@@ -3,6 +3,7 @@ name: Mentaiko CI
 on:
   push:
     branches:
+      - main
       - 'feature/**'
       - 'fix/**'
   pull_request:

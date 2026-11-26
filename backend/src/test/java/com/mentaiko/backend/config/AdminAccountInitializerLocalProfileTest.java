@@ -15,6 +15,13 @@ import com.mentaiko.backend.repository.UserRepository;
 @org.springframework.context.annotation.Import(com.mentaiko.backend.config.TestMailConfiguration.class)
 @SpringBootTest(properties = {
         "spring.profiles.active=local",
+        "app.admin.bootstrap-enabled=true",
+        "app.admin.name=Administrador Mentaiko",
+        "app.admin.email=administrador@mentaiko.com",
+        "app.admin.password=local-test-only-secret-2026!",
+        "app.admin.birth-date=1990-01-01",
+        "app.admin.university=Mentaiko",
+        "app.admin.career=Administracion",
         "spring.datasource.url=jdbc:h2:mem:admin_local_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.username=sa",
         "spring.datasource.password=",
@@ -40,9 +47,9 @@ class AdminAccountInitializerLocalProfileTest {
 
         User admin = userRepository.findByEmailIgnoreCase("administrador@mentaiko.com").orElseThrow();
         assertThat(admin.getRole()).isEqualTo(Role.ADMIN);
-        assertThat(admin.getPasswordHash()).isNotEqualTo("Mentaiko123454$");
+        assertThat(admin.getPasswordHash()).isNotEqualTo("local-test-only-secret-2026!");
         assertThat(admin.getPasswordHash()).startsWith("$2");
-        assertThat(passwordEncoder.matches("Mentaiko123454$", admin.getPasswordHash())).isTrue();
+        assertThat(passwordEncoder.matches("local-test-only-secret-2026!", admin.getPasswordHash())).isTrue();
 
         initializer.bootstrapAdminIfNeeded();
 
