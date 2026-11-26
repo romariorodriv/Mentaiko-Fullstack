@@ -138,18 +138,19 @@ class PasswordResetServiceTest {
 
     @Test
     void resetsPasswordConsumesAllLinksAndRevokesOldJwt() throws Exception {
+        long originalVersion = user.getAuthVersion();
         String oldJwt = jwt.generateToken(user);
         String first = seed("a", NOW.plusSeconds(900));
         String other = seed("b", NOW.plusSeconds(900));
         service.reset(first, PASSWORD);
         User updated = users.findById(user.getId()).orElseThrow();
         assertThat(encoder.matches(PASSWORD, updated.getPasswordHash())).isTrue();
-        assertThat(updated.getAuthVersion()).isEqualTo(1);
+        assertThat(updated.getAuthVersion()).isEqualTo(originalVersion + 1);
         assertThat(jwt.isTokenValid(oldJwt, updated)).isFalse();
         assertThat(jwt.isTokenValid(jwt.generateToken(updated), updated)).isTrue();
         assertInvalid(first);
         assertInvalid(other);
-        assertThat(users.findById(user.getId()).orElseThrow().getAuthVersion()).isEqualTo(1);
+        assertThat(users.findById(user.getId()).orElseThrow().getAuthVersion()).isEqualTo(originalVersion + 1);
     }
 
     @Test
