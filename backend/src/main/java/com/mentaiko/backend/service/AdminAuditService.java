@@ -45,11 +45,11 @@ public class AdminAuditService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Paginacion invalida");
         }
         if (resourceType == null || resourceType.isBlank()) {
-            return jdbc.queryForList("SELECT id, actor_user_id, action, resource_type, resource_id, before_summary, after_summary, occurred_at FROM admin_audit_events ORDER BY occurred_at DESC, id DESC LIMIT ? OFFSET ?", limit, offset);
+            return jdbc.queryForList("SELECT e.id, e.actor_user_id, u.name AS actor_name, e.action, e.resource_type, e.resource_id, e.before_summary, e.after_summary, e.occurred_at FROM admin_audit_events e LEFT JOIN users u ON u.id=e.actor_user_id ORDER BY e.occurred_at DESC, e.id DESC LIMIT ? OFFSET ?", limit, offset);
         }
         if (!List.of("EMOTION", "MICRO_ACTIVITY", "RULE").contains(resourceType)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Recurso invalido");
         }
-        return jdbc.queryForList("SELECT id, actor_user_id, action, resource_type, resource_id, before_summary, after_summary, occurred_at FROM admin_audit_events WHERE resource_type = ? ORDER BY occurred_at DESC, id DESC LIMIT ? OFFSET ?", resourceType, limit, offset);
+        return jdbc.queryForList("SELECT e.id, e.actor_user_id, u.name AS actor_name, e.action, e.resource_type, e.resource_id, e.before_summary, e.after_summary, e.occurred_at FROM admin_audit_events e LEFT JOIN users u ON u.id=e.actor_user_id WHERE e.resource_type = ? ORDER BY e.occurred_at DESC, e.id DESC LIMIT ? OFFSET ?", resourceType, limit, offset);
     }
 }
