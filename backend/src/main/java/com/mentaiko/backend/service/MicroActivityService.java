@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -26,8 +27,15 @@ public class MicroActivityService {
     private static final Logger log = LoggerFactory.getLogger(MicroActivityService.class);
 
     private final MicroActivityRepository microActivityRepository;
+    private final AdminAuditService audit;
 
     public MicroActivityService(MicroActivityRepository microActivityRepository) {
+        this(microActivityRepository, null);
+    }
+
+    @Autowired
+    public MicroActivityService(MicroActivityRepository microActivityRepository, AdminAuditService audit) {
+        this.audit = audit;
         this.microActivityRepository = microActivityRepository;
     }
 
@@ -77,6 +85,8 @@ public class MicroActivityService {
         activity.setActive(true);
 
         MicroActivity savedActivity = microActivityRepository.save(activity);
+        if (audit != null) audit.record("CREATE", "MICRO_ACTIVITY", savedActivity.getId(), null,
+                "duration=" + savedActivity.getDurationMinutes() + ",active=" + savedActivity.isActive());
         log.info("Micro-activity created with id={} durationMinutes={} active={}",
                 savedActivity.getId(), savedActivity.getDurationMinutes(), savedActivity.isActive());
         return toResponse(savedActivity);
@@ -101,6 +111,7 @@ public class MicroActivityService {
                     );
                 });
 
+        String before = "duration=" + activity.getDurationMinutes() + ",active=" + activity.isActive();
         if (request.title() != null) {
             String title = normalizeSpaces(request.title());
             validateTitle(title);
@@ -127,6 +138,8 @@ public class MicroActivityService {
             activity.setActive(request.active());
         }
 
+        if (audit != null) audit.record("UPDATE", "MICRO_ACTIVITY", activity.getId(), before,
+                "duration=" + activity.getDurationMinutes() + ",active=" + activity.isActive());
         log.info("Micro-activity id={} updated durationMinutes={} active={}",
                 activity.getId(), activity.getDurationMinutes(), activity.isActive());
         return toResponse(activity);
