@@ -63,6 +63,18 @@ class JwtServiceTest {
         assertThat(service.isTokenValid(service.generateToken(user), user)).isTrue();
     }
 
+    @Test
+    void tokenFromDeletedIdentityCannotAuthenticateReplacementWithSameEmail() {
+        JwtService service = new JwtService(SECRET, 60_000);
+        User original = user();
+        original.prePersist();
+        String oldToken = service.generateToken(original);
+        User replacement = user();
+        replacement.prePersist();
+        assertThat(service.isTokenValid(oldToken, replacement)).isFalse();
+        assertThat(service.isTokenValid(service.generateToken(replacement), replacement)).isTrue();
+    }
+
     private User user() {
         User user = new User();
         user.setName("Usuario Test");
