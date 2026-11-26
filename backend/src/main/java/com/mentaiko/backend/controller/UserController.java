@@ -2,6 +2,13 @@
 package com.mentaiko.backend.controller;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.RequestParam;
+import java.time.LocalDate;
+import java.util.Map;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,6 +28,7 @@ import com.mentaiko.backend.dto.auth.UserResponse;
 import com.mentaiko.backend.dto.user.UpdateUserProfileRequest;
 import com.mentaiko.backend.dto.user.DeleteAccountRequest;
 import com.mentaiko.backend.service.AccountDeletionService;
+import com.mentaiko.backend.service.PersonalDataExportService;
 
 import com.mentaiko.backend.service.PasswordResetService;
 import com.mentaiko.backend.service.UserService;
@@ -32,16 +40,19 @@ public class UserController {
 
     private final UserService userService;
     private final AccountDeletionService accountDeletionService;
+    private final PersonalDataExportService personalDataExportService;
     private final PasswordResetService passwordResetService;
 
     public UserController(
             UserService userService,
             PasswordResetService passwordResetService,
-            AccountDeletionService accountDeletionService) {
+            AccountDeletionService accountDeletionService,
+            PersonalDataExportService personalDataExportService) {
 
         this.userService = userService;
         this.passwordResetService = passwordResetService;
         this.accountDeletionService = accountDeletionService;
+        this.personalDataExportService = personalDataExportService;
     }
 
     // REGISTRO DE USUARIOS
@@ -99,6 +110,17 @@ public class UserController {
                 request
         );
     }
+    @GetMapping(value = "/api/users/me/export", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> exportMe(
+            Authentication authentication,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(defaultValue = "false") boolean includeNotes) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"mentaiko-datos-personales.json\"")
+                .body(personalDataExportService.export(authentication.getName(), from, to, includeNotes));
+    }
+
     @DeleteMapping("/api/users/me")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteMe(Authentication authentication, @Valid @RequestBody DeleteAccountRequest request) {

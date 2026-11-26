@@ -2,6 +2,26 @@
 @if(loading()){<div class="loading-panel">Cargando perfil...</div>} @else {
 <section class="profile-layout"><aside class="profile-card"><span class="profile-avatar">{{initials()}}</span><h2>{{auth.profile()?.name}}</h2><p>{{auth.profile()?.email}}</p><span class="role-chip">{{auth.profile()?.role==='ADMIN'?'Administrador':'Estudiante'}}</span><small>Miembro desde {{auth.profile()?.createdAt||'tu registro'}}</small><a class="btn secondary" routerLink="/app/preferencias-actividades">Preferencias de actividades</a></aside><form class="panel profile-form" [formGroup]="form" (ngSubmit)="save()"><div class="panel-head"><div><span class="eyebrow">INFORMACION PERSONAL</span><h2>Datos del perfil</h2></div></div><label>Nombre completo<input formControlName="name"></label><label>Correo electronico<input [value]="auth.profile()?.email" disabled><small>El correo no puede modificarse desde el perfil.</small></label><div class="form-grid"><label>Universidad<input formControlName="university"></label><label>Carrera<input formControlName="career"></label></div>@if(message()){<div class="alert success">{{message()}}</div>}@if(error()){<div class="alert error">{{error()}}</div>}<button class="btn primary" [disabled]="form.invalid||saving()">{{saving()?'Guardando...':'Guardar cambios'}}</button></form></section>}
 
+<section class="panel" aria-labelledby="export-data-title">
+  <h2 id="export-data-title">Exportar mi información</h2>
+  <p>Descarga tus registros emocionales y actividades en formato JSON. Las notas personales se excluyen por defecto.</p>
+  <div class="form-grid">
+    <label for="export-from">Desde (opcional)
+      <input id="export-from" type="date" [value]="exportFrom()" (input)="exportFrom.set($any($event.target).value)" />
+    </label>
+    <label for="export-to">Hasta (opcional)
+      <input id="export-to" type="date" [value]="exportTo()" (input)="exportTo.set($any($event.target).value)" />
+    </label>
+  </div>
+  <label for="export-include-notes">
+    <input id="export-include-notes" type="checkbox" [checked]="includeNotes()" (change)="includeNotes.set($any($event.target).checked)" />
+    Incluir mis notas y comentarios privados
+  </label>
+  <button type="button" class="btn secondary" (click)="exportData()" [disabled]="exporting()">
+    {{ exporting() ? 'Preparando archivo...' : 'Descargar mis datos' }}
+  </button>
+</section>
+
 <section class="panel" aria-labelledby="delete-account-title">
   <h2 id="delete-account-title">Eliminar mi cuenta</h2>
   <p>Esta acción eliminará tu perfil y tus datos personales de Mentaiko. No se puede deshacer.</p>
