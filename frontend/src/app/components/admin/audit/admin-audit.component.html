@@ -11,9 +11,9 @@
   @if(loading()) { <p aria-live="polite">Cargando auditoría...</p> }
   @else if (!events().length) { <p>No hay eventos para este filtro.</p> }
   @else {
-    <div class="audit-scroll"><table><thead><tr><th>Fecha</th><th>Admin ID</th><th>Acción</th><th>Recurso</th><th>ID</th><th>Antes</th><th>Después</th></tr></thead>
+    <div class="audit-scroll"><table><thead><tr><th>Fecha</th><th>Administrador</th><th>Acción</th><th>Recurso</th><th>ID</th><th>Antes</th><th>Después</th></tr></thead>
     <tbody>@for(item of events(); track item.id) { <tr>
-      <td>{{item.occurred_at | date:'short'}}</td><td>{{item.actor_user_id}}</td>
+      <td>{{item.occurred_at | date:'short'}}</td><td>{{item.actor_name || 'Cuenta eliminada'}} (#{{item.actor_user_id}})</td>
       <td>{{item.action}}</td><td>{{item.resource_type}}</td><td>{{item.resource_id}}</td>
       <td>{{item.before_summary || '—'}}</td><td>{{item.after_summary}}</td>
     </tr> }</tbody></table></div>
