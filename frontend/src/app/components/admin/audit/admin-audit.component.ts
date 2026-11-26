@@ -6,6 +6,7 @@ import { environment } from '../../../../environments/environment';
 interface AuditEvent {
   id: number;
   actor_user_id: number;
+  actor_name: string | null;
   action: string;
   resource_type: string;
   resource_id: number;
