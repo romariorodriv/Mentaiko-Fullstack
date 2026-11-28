@@ -3,8 +3,8 @@ package com.mentaiko.backend.service;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import org.slf4j.Logger;
@@ -129,7 +129,7 @@ public class WellnessChatService {
                 throw new IllegalStateException("Empty assistant reply");
             }
             Optional<MicroActivity> selected = catalog.stream()
-                    .filter(activity -> activity.getId().equals(id)).findFirst();
+                    .filter(activity -> Objects.equals(activity.getId(), id)).findFirst();
             WellnessChatResponse.SuggestedActivity activity = selected.map(a ->
                     new WellnessChatResponse.SuggestedActivity(a.getId(), a.getTitle(),
                             a.getDescription(), a.getDurationMinutes())).orElse(null);
