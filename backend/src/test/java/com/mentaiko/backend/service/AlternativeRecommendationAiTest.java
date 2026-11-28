@@ -3,6 +3,7 @@ package com.mentaiko.backend.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +53,18 @@ class AlternativeRecommendationAiTest {
         for (int attempt = 0; attempt < 3; attempt++) {
             assertThat(ai.choose("calma", 3, RecommendationDiscardReason.TRANSPORTE, null, candidates)).isEmpty();
         }
+    }
+
+    @Test
+    void skipsProviderWhenNoReasonIsGiven() {
+        assertThat(ai.choose("calma", 3, null, 5, candidates)).isEmpty();
+        verify(model, never()).call(any(Prompt.class));
+    }
+
+    @Test
+    void rejectsZeroAndUsesLocalRules() {
+        when(model.call(any(Prompt.class))).thenReturn(response("0"));
+        assertThat(ai.choose("ansiedad", 4, RecommendationDiscardReason.BIBLIOTECA, 5, candidates)).isEmpty();
     }
 
     private ChatResponse response(String text) {
