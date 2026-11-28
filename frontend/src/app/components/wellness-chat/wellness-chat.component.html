@@ -1,0 +1,60 @@
+<section class="wellness-chat">
+  <div class="chat-intro">
+    <div>
+      <p class="eyebrow">BIENESTAR ESTUDIANTIL</p>
+      <h1>Asistente de bienestar</h1>
+      <p>Cuéntame cómo te sientes. Puedo ayudarte a encontrar una microactividad para tu momento.</p>
+    </div>
+    <button type="button" class="btn secondary" (click)="clear()" [disabled]="loading()">Nueva conversación</button>
+  </div>
+
+  <div class="chat-notice" role="note">
+    Este asistente ofrece orientación general, no diagnósticos ni atención psicológica.
+    Evita compartir datos sensibles. En una emergencia, busca ayuda presencial o llama a los servicios locales de emergencia.
+  </div>
+
+  <div class="chat-thread" role="log" aria-live="polite" aria-label="Conversación de bienestar">
+    @if (messages().length === 0) {
+      <div class="welcome">
+        <span class="welcome-icon" aria-hidden="true">✦</span>
+        <h2>¿Cómo te sientes hoy?</h2>
+        <p>Por ejemplo: «Estoy en la biblioteca, tengo cinco minutos y me siento estresado por mis exámenes».</p>
+      </div>
+    }
+    @for (item of messages(); track $index) {
+      <article class="message" [class.mine]="item.role === 'user'">
+        <span class="speaker">{{ item.role === 'user' ? 'Tú' : 'Mentaiko' }}</span>
+        <p>{{ item.content }}</p>
+        @if (item.activity; as activity) {
+          <div class="suggested">
+            <span>MICROACTIVIDAD DEL CATÁLOGO</span>
+            <strong>{{ activity.title }}</strong>
+            <p>{{ activity.description }}</p>
+            <small>{{ activity.durationMinutes }} minutos</small>
+            <a routerLink="/app/actividades">Ver microactividades</a>
+          </div>
+        }
+      </article>
+    }
+    @if (loading()) {
+      <div class="thinking" role="status">Preparando una respuesta…</div>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="alert error" role="alert">{{ error() }}</p>
+  }
+
+  <form class="chat-compose" (ngSubmit)="send()">
+    <label for="wellness-message">Tu mensaje</label>
+    <textarea id="wellness-message" name="message" [(ngModel)]="draft" maxlength="500"
+      rows="3" placeholder="Escribe cómo te sientes y qué tiempo tienes disponible…"
+      [disabled]="loading()"></textarea>
+    <div class="compose-footer">
+      <small>{{ draft.length }}/500 caracteres</small>
+      <button type="submit" class="btn primary" [disabled]="loading() || !draft.trim()">
+        {{ loading() ? 'Enviando…' : 'Enviar mensaje' }}
+      </button>
+    </div>
+  </form>
+</section>
