@@ -2,29 +2,36 @@
   <div class="app-shell">
     <aside class="sidebar" [class.open]="menuOpen()">
       <a class="brand" routerLink="/app/dashboard" (click)="menuOpen.set(false)"><img class="brand-logo" src="/branding/mentaiko-logo.svg" alt="Mentaiko"></a>
-      <nav>
-        <p class="nav-caption">MI ESPACIO</p>
-        <a routerLink="/app/dashboard" routerLinkActive="active" (click)="menuOpen.set(false)"><span>⌂</span> Resumen</a>
-        <a routerLink="/app/preferencias-actividades" routerLinkActive="active" (click)="menuOpen.set(false)">Preferencias de actividades</a>
-        <a routerLink="/app/factores" routerLinkActive="active" (click)="menuOpen.set(false)">Factores emocionales</a>
-        <a routerLink="/app/recordatorios" routerLinkActive="active" (click)="menuOpen.set(false)">Recordatorios</a>
-        <a routerLink="/app/meta-semanal" routerLinkActive="active" (click)="menuOpen.set(false)">Mi meta semanal</a>
-        <a routerLink="/app/calendario" routerLinkActive="active" (click)="menuOpen.set(false)"><span>▦</span> Calendario emocional</a>
-        <a routerLink="/app/sueno" routerLinkActive="active" (click)="menuOpen.set(false)">Mi sueño</a>
-        <a routerLink="/app/energia" routerLinkActive="active" (click)="menuOpen.set(false)">Mi energía</a>
-        <a routerLink="/app/checkins" routerLinkActive="active" (click)="menuOpen.set(false)"><span>♡</span> Mis check-ins</a>
-        <a routerLink="/app/bienestar-chat" routerLinkActive="active" (click)="menuOpen.set(false)"><span>✦</span> Asistente de bienestar</a>
-        <a routerLink="/app/actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span>◉</span> Microactividades</a>
-        <a routerLink="/app/historial-actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span>▤</span> Mi historial de actividades</a>
-        <a routerLink="/app/perfil" routerLinkActive="active" (click)="menuOpen.set(false)"><span>○</span> Mi perfil</a>
+      <nav aria-label="Navegación principal">
+        <p class="nav-caption">INICIO</p>
+        <a routerLink="/app/dashboard" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">⌂</span> Resumen</a>
+
+        <p class="nav-caption">MI BIENESTAR</p>
+        <a routerLink="/app/checkins" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">♡</span> Mis check-ins</a>
+        <a routerLink="/app/bienestar-chat" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">✦</span> Asistente de bienestar</a>
+        <a routerLink="/app/actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">◉</span> Microactividades</a>
+        <a routerLink="/app/historial-actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">▤</span> Mi historial de actividades</a>
+
+        <p class="nav-caption">MI SEGUIMIENTO</p>
+        <a routerLink="/app/calendario" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">▦</span> Calendario emocional</a>
+        <a routerLink="/app/meta-semanal" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">◎</span> Mi meta semanal</a>
+        <a routerLink="/app/sueno" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">☾</span> Mi sueño</a>
+        <a routerLink="/app/energia" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">◷</span> Mi energía</a>
+        <a routerLink="/app/factores" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">◇</span> Factores emocionales</a>
+        <a routerLink="/app/recordatorios" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">♧</span> Recordatorios</a>
+
+        <p class="nav-caption">PREFERENCIAS</p>
+        <a routerLink="/app/preferencias-actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">⚙</span> Preferencias de actividades</a>
+        <a routerLink="/app/perfil" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">○</span> Mi perfil</a>
+
         @if (auth.role() === 'ADMIN') {
           <p class="nav-caption">ADMINISTRACIÓN</p>
-          <a routerLink="/app/admin/dashboard" routerLinkActive="active"><span>▣</span> Dashboard</a>
-          <a routerLink="/app/admin/emociones" routerLinkActive="active"><span>◇</span> Emociones</a>
-          <a routerLink="/app/admin/actividades" routerLinkActive="active"><span>▦</span> Actividades</a>
-          <a routerLink="/app/admin/reglas" routerLinkActive="active"><span>⇄</span> Reglas de recomendación</a>
-          <a routerLink="/app/admin/auditoria" routerLinkActive="active"><span>▤</span> Auditoría de cambios</a>
-          <a routerLink="/app/admin/indicadores" routerLinkActive="active"><span>⌁</span> Indicadores</a>
+          <a routerLink="/app/admin/dashboard" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">▣</span> Dashboard</a>
+          <a routerLink="/app/admin/emociones" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">◇</span> Emociones</a>
+          <a routerLink="/app/admin/actividades" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">▦</span> Actividades</a>
+          <a routerLink="/app/admin/reglas" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">⇄</span> Reglas de recomendación</a>
+          <a routerLink="/app/admin/auditoria" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">▤</span> Auditoría de cambios</a>
+          <a routerLink="/app/admin/indicadores" routerLinkActive="active" (click)="menuOpen.set(false)"><span aria-hidden="true">⌁</span> Indicadores</a>
         }
       </nav>
       <div class="sidebar-note"><b>¿Necesitas ayuda inmediata?</b><span>Mentaiko no reemplaza atención profesional.</span><a href="tel:105">Ver líneas de ayuda</a></div>
