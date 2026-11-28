@@ -14,6 +14,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.mentaiko.backend.dto.recommendation.WellnessChatRequest;
 import com.mentaiko.backend.entity.MicroActivity;
@@ -50,6 +51,21 @@ class WellnessChatServiceTest {
         assertThat(result.reply()).isEqualTo("Prueba una actividad breve.");
         assertThat(result.activity()).isNull();
         verify(model).call(any(Prompt.class));
+    }
+
+    @Test
+    void verifiedCatalogSelectionIncludesActivityDetails() {
+        var selected = activity();
+        ReflectionTestUtils.setField(selected, "id", 42L);
+        when(repository.findByActiveTrueOrderByTitleAscIdAsc()).thenReturn(List.of(selected));
+        when(model.call(any(Prompt.class))).thenReturn(response("Respira un momento.\nACTIVIDAD_ID: 42"));
+
+        var result = service.reply(new WellnessChatRequest("Tengo tres minutos", List.of()));
+        assertThat(result.reply()).isEqualTo("Respira un momento.");
+        assertThat(result.activity()).isNotNull();
+        assertThat(result.activity().id()).isEqualTo(42L);
+        assertThat(result.activity().title()).isEqualTo("Respiración pausada");
+        assertThat(result.activity().durationMinutes()).isEqualTo(3);
     }
 
     @Test
