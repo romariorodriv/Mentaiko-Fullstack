@@ -92,6 +92,7 @@ La configuración productiva usa el perfil `prod`, validación del esquema y var
 - [Contratos HTTP](frontend/API-CONTRACT.md)
 - [Migraciones de base de datos](docs/database-migrations.md)
 - [Despliegue de recuperación de contraseña](docs/password-reset-deployment.md)
+- [Proveedor externo de recomendaciones (HU-25)](docs/recommendation-provider.md)
 
 Los informes de implementación antiguos se conservan como antecedentes, pero no describen necesariamente el estado actual de `main`.
 

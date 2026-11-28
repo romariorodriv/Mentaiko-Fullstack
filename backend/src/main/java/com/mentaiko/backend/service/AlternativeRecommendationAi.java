@@ -38,14 +38,16 @@ class AlternativeRecommendationAi {
 
     @Autowired
     AlternativeRecommendationAi(@Value("${app.recommendations.ai.api-key:}") String apiKey,
-            @Value("${app.recommendations.ai.model:gpt-4o-mini}") String modelName) {
+            @Value("${app.recommendations.ai.model:openai/gpt-oss-20b}") String modelName,
+            @Value("${app.recommendations.ai.base-url:https://api.groq.com/openai/v1}") String baseUrl) {
         this(apiKey.isBlank() ? null : OpenAiChatModel.builder()
                 .options(OpenAiChatOptions.builder()
                         .apiKey(apiKey)
+                        .baseUrl(baseUrl)
                         .model(modelName)
-                        .timeout(Duration.ofSeconds(3))
+                        .timeout(Duration.ofSeconds(8))
                         .maxRetries(0)
-                        .maxCompletionTokens(16)
+                        .maxCompletionTokens(256)
                         .build())
                 .build());
     }
