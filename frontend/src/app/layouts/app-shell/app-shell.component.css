@@ -1,1 +1,30 @@
-/* Los estilos generales del shell permanecen en src/styles.css. */
+/* HU-36: navegación agrupada, desplazable y accesible sin cambiar las pantallas. */
+.sidebar { overflow: hidden; }
+.sidebar nav {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: 0 0.25rem 0.9rem 0;
+  scrollbar-width: thin;
+  scrollbar-color: #c9dcd6 transparent;
+}
+.sidebar .brand { flex: 0 0 auto; padding-bottom: 1.05rem; }
+.sidebar .nav-caption {
+  margin-top: 0.6rem;
+  padding-top: 1.05rem;
+  padding-bottom: 0.4rem;
+  border-top: 1px solid var(--line);
+}
+.sidebar .nav-caption:first-child { margin-top: 0; padding-top: 0.4rem; border-top: 0; }
+.sidebar nav a { min-height: 39px; padding: 0.55rem 0.72rem; line-height: 1.3; }
+.sidebar nav a span { flex: 0 0 20px; }
+.sidebar nav a:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+.sidebar .sidebar-note { flex: 0 0 auto; margin-top: 0.6rem; }
+.sidebar .logout { flex: 0 0 auto; }
+@media (max-height: 680px) {
+  .sidebar { padding-top: 0.85rem; padding-bottom: 0.7rem; }
+  .sidebar .brand { padding-bottom: 0.6rem; }
+  .sidebar nav a { min-height: 35px; padding-top: 0.38rem; padding-bottom: 0.38rem; }
+}
